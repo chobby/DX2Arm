@@ -15,13 +15,13 @@ String numberBuffer1 = "test";
 BluetoothSerial SerialBT;
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "TFT Ver. 0.6.2"
+#define VERSION_NUMBER  "TFT Ver. 0.7.0"
 // -----------------------------------
 
 
 bool onlyLeftArm = false; //左手のみを使用するかどうか
 bool mainloop = false;
-int exception = 1900;   //手が全開で脱力する時の閾値 左腕:1800
+int exception = 2400;   //手が全開で脱力する時の閾値 左腕:1800
 
 const uint8_t PIN_RTS = 11;
 
@@ -29,13 +29,13 @@ const int pin1 = 12;
 const int pin2 = 22;
 const int pin3 = 25;
 
-const int numRecords = 200;
-int number = 9; //←ここの数字はID+2とする
-int values[numRecords * 9 ]; //←ここの数字はID＋１とする
+const int defaultRecordNumber = 200;  //デフォルトの録画する数
+int number = 9; //←ここの数字はID+1とする 呼び出す数
+int values[defaultRecordNumber * 9 ]; //←ここの数字はID＋１とする
 char buffer[16]; // 数値の一時的な保持のためのバッファ
 
 
-const int timer = numRecords;
+const int timer = defaultRecordNumber;
 int TIMERLENGTH = 0;
 
 
@@ -51,7 +51,7 @@ const int s2diference = 400; //id:02モータの目標値と実測値の差分 �
 const int s4diference = 800; //id:04モータの目標値と実測値の差分 この差分を超えるとモーションを終了する
 
 int z = 0; //フリーの時、落下防止に動きを遅くするフラグ
-int ran1, ran2, ran4 = 0;
+int ran1, ran2, ran3, ran4 = 0;
 int s08 = 0; //腕の角度
 
 int mode = 10; //1~9:モーション録画, 11~19:モーション再生
@@ -504,14 +504,7 @@ void Pgain_on() {
     dxl.positionPGain(TARGET_ID7, 500);
     dxl.positionPGain(TARGET_ID8, 1200);
 
-    // dxl.positionIGain(TARGET_ID1, serialnumberI);
-    // dxl.positionIGain(TARGET_ID2, serialnumberI);
-    // dxl.positionIGain(TARGET_ID3, serialnumberI);
-    // dxl.positionIGain(TARGET_ID4, serialnumberI);
-    // dxl.positionIGain(TARGET_ID5, serialnumberI);
-    // dxl.positionIGain(TARGET_ID6, serialnumberI);
-    // dxl.positionIGain(TARGET_ID7, serialnumberI);
-    // dxl.positionIGain(TARGET_ID8, serialnumberI);
+
   }
 }
 
@@ -533,10 +526,6 @@ void zero() { //フリーの時、落下防止に動きを遅くするフラグ�
   range(targetPos01, ran1);
   range(targetPos02, ran2);
   range(targetPos04, ran4);
-
-  //range(s1,730);
-  //range(s2,1000);
-  //range(s4,3000);
 
   if (z == 4)z = 0;
   Serial.print(z);
@@ -595,11 +584,13 @@ void slow() { //条件がONの時、スローにする。ただし腕が全開�
 
       dxl.torqueEnable(TARGET_ID1, false);
       dxl.torqueEnable(TARGET_ID2, false);
+      dxl.torqueEnable(TARGET_ID3, false);
       dxl.torqueEnable(TARGET_ID4, false);
       dxl.torqueEnable(TARGET_ID6, false);
       delay(de);
       dxl.torqueEnable(TARGET_ID1, true);
       dxl.torqueEnable(TARGET_ID2, true);
+      dxl.torqueEnable(TARGET_ID3, true);
       dxl.torqueEnable(TARGET_ID4, true);
       dxl.torqueEnable(TARGET_ID6, true);
       delay(12);
@@ -607,6 +598,7 @@ void slow() { //条件がONの時、スローにする。ただし腕が全開�
     } else {
       dxl.torqueEnable(TARGET_ID1, false);
       dxl.torqueEnable(TARGET_ID2, false);
+      dxl.torqueEnable(TARGET_ID3, false);
       dxl.torqueEnable(TARGET_ID4, false);
       dxl.torqueEnable(TARGET_ID6, false);
     }
@@ -712,8 +704,8 @@ void recordMotion() {
     dxl.torqueEnable(TARGET_ID7, false);
     dxl.torqueEnable(TARGET_ID8, false);
 
-    for (int i = 0; i < numRecords; i++) {
-      DISPwrite(String(i)+"/"+String(numRecords));
+    for (int i = 0; i < defaultRecordNumber; i++) {
+      DISPwrite(String(i)+"/"+String(defaultRecordNumber));
       
       UNDERDISPwrite(String(mode)+", "+String(targetPos01)+", "+String(targetPos02)+", "+String(targetPos03)+", "+String(targetPos04));
 
@@ -749,6 +741,7 @@ void recordMotion() {
       Serial.print(", Audio="); Serial.print(swAudioState);
 
       //レコード書き出し
+
       file.print(targetPos01);
       file.print(",");
       file.print(targetPos02);
@@ -862,7 +855,8 @@ void playMotion() {
     dxl.torqueEnable(TARGET_ID8, true);
 
     // シリアルモニタにデータを表示&モータ実行
-    for (int i = 0; i < numRecords; i++) {
+    for (int i = 0; i < defaultRecordNumber; i++) {
+
 
       int ss1 = values[i * number];
       int ss2 = values[i * number + 1];
@@ -890,7 +884,7 @@ void playMotion() {
       Serial.print("  mode= ");
       Serial.println(mode);
 
-      DISPwrite(String(i)+"/"+String(numRecords));
+      DISPwrite(String(i)+"/"+String(defaultRecordNumber));
 
       TIMERLENGTH = i;
       TIMERDISPwrite();
@@ -982,9 +976,7 @@ void audioLoop() {
   //Serial.println(audioMode);
 
   if (audioMode == 1) {
-    //    digitalWrite(led01, HIGH);
-    //    digitalWrite(led02, HIGH);
-    //    digitalWrite(led03, HIGH);
+
     drawKeypad();
     delay(1000);
     audioMode = 2;
@@ -1214,14 +1206,10 @@ void armloop() {
       sw05State = 1;
     }
 
-    dxl.torqueEnable(TARGET_ID1, true);
-    dxl.torqueEnable(TARGET_ID2, true);
-    dxl.torqueEnable(TARGET_ID3, true);
-    dxl.torqueEnable(TARGET_ID4, true);
-    dxl.torqueEnable(TARGET_ID5, true);
-    dxl.torqueEnable(TARGET_ID6, true);
-    dxl.torqueEnable(TARGET_ID7, true);
-    dxl.torqueEnable(TARGET_ID8, true);
+    // dxl.torqueEnable(TARGET_ID1, true);
+    // dxl.torqueEnable(TARGET_ID2, true);
+    // dxl.torqueEnable(TARGET_ID4, true);
+    
 
 
   }
@@ -1263,6 +1251,7 @@ void setup() {
 
   ran1 = dxl.presentPosition(TARGET_ID1); delay(5);
   ran2 = dxl.presentPosition(TARGET_ID2); delay(5);
+  ran3 - dxl.presentPosition(TARGET_ID3); delay(5);
   ran4 = dxl.presentPosition(TARGET_ID4); delay(5);
 
   Serial.print(ran1);
