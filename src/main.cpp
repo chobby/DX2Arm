@@ -15,7 +15,7 @@ String numberBuffer1 = "test";
 BluetoothSerial SerialBT;
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "TFT Ver. 0.7.0"
+#define VERSION_NUMBER  "TFT Ver. 0.7.2"
 // -----------------------------------
 
 
@@ -54,7 +54,7 @@ int z = 0; //フリーの時、落下防止に動きを遅くするフラグ
 int ran1, ran2, ran3, ran4 = 0;
 int s08 = 0; //腕の角度
 
-int mode = 10; //1~9:モーション録画, 11~19:モーション再生
+int mode = 10; //1-9:モーション登録, 11-19:モーション再生
 int audioMode = 0; //0:初期値,
 
 int O_time = 0;
@@ -157,11 +157,6 @@ uint16_t keyColor[9] = {
 TFT_eSPI_Button key[9];
 
 
-volatile int interruptCounter;
-int totalInterruptCounter;
-
-// hw_timer_t * timer = NULL;
-// portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
 
 //------------------------------------------------------------------------------------------
 
@@ -172,12 +167,6 @@ int totalInterruptCounter;
 //------------------------------------------------------------------------------------------
 
 
-
-// void IRAM_ATTR onTimer() {
-// 	portENTER_CRITICAL_ISR(&timerMux);
-// 	interruptCounter++;
-// 	portEXIT_CRITICAL_ISR(&timerMux);
-// }
 
 void DISPprint() {
   // Update the number display field
@@ -361,8 +350,7 @@ void status(const char *msg) {
 }
 //------------------------------------------------------------------------------------------
 
-void drawKeypad()
-{
+void drawKeypad() {
   // Draw the keys
   for (uint8_t row = 0; row < 3; row++) {
     for (uint8_t col = 0; col < 3; col++) {
@@ -370,111 +358,78 @@ void drawKeypad()
 
       if (b < 3) tft.setFreeFont(LABEL1_FONT);
       else tft.setFreeFont(LABEL2_FONT);
-      if(audioMode == 0){
-        
-        if(mode > 9){
+      if(audioMode == 0) {
           keyColor[0] = TFT_DARKGREEN;
-          keyColor[1] = TFT_DARKGREY; 
-          keyColor[2] = TFT_RED;                 
+          keyColor[1] = TFT_DARKGREY;
+          keyColor[2] = TFT_RED;
+        
+        if (mode == 0){
+          keyColor[3] = TFT_RED;
+          keyColor[4] = TFT_RED;
+          keyColor[5] = TFT_RED;
+          keyColor[6] = TFT_RED;
+          keyColor[7] = TFT_RED;
+          keyColor[8] = TFT_RED;
+        }
+
+        if(mode == 10){
           keyColor[3] = TFT_DARKGREEN;
           keyColor[4] = TFT_DARKGREEN;
           keyColor[5] = TFT_DARKGREEN;
           keyColor[6] = TFT_DARKGREEN;
           keyColor[7] = TFT_DARKGREEN;
           keyColor[8] = TFT_DARKGREEN;
-        }else{
-          keyColor[0] = TFT_DARKGREEN;
-          keyColor[1] = TFT_DARKGREY; 
-          keyColor[2] = TFT_RED;
-          keyColor[3] = TFT_RED;
-          keyColor[4] = TFT_RED;
-          keyColor[5] = TFT_RED;
-          keyColor[6] = TFT_RED;
-          keyColor[7] = TFT_RED;
-          keyColor[8] = TFT_RED;        
-        }                                                
+        }
+        
+
+        if (0 < mode && mode < 10) {
+          for (int i = 3; i < 9; i++) {
+            if (i == mode + 2){
+              keyColor[i] = TFT_RED;
+            } else {
+              keyColor[i] = TFT_DARKGREY;
+            }
+          }
+        }
+
+        if (10 < mode && mode < 20) {
+          for (int i = 3; i < 9; i++) {
+            if (i == mode - 8){
+              keyColor[i] = TFT_DARKGREEN;
+            } else {
+              keyColor[i] = TFT_DARKGREY;
+            }
+          }
+        }
+
+      }
+      else {
+        keyColor[0] = TFT_DARKGREY;
+        keyColor[1] = TFT_BLUE;
+        keyColor[2] = TFT_DARKGREY;
+
+        if(audioMode == 1){
+          keyColor[3] = TFT_BLUE;
+          keyColor[4] = TFT_BLUE;
+          keyColor[5] = TFT_BLUE;
+          keyColor[6] = TFT_BLUE;
+          keyColor[7] = TFT_BLUE;
+          keyColor[8] = TFT_BLUE;        
+        }
+
+        if (1 < audioMode && audioMode < 8) {
+          for (int i = 3; i < 9; i++) {
+            if (i == audioMode + 1){
+              keyColor[i] = TFT_BLUE;
+            } else {
+              keyColor[i] = TFT_DARKGREY;
+            }
+          }
+        }
+
       }
       
-      if(audioMode == 1){
-        keyColor[0] = TFT_DARKGREY;
-        keyColor[1] = TFT_BLUE; 
-        keyColor[2] = TFT_DARKGREY;
-        keyColor[3] = TFT_BLUE;
-        keyColor[4] = TFT_BLUE;
-        keyColor[5] = TFT_BLUE;
-        keyColor[6] = TFT_BLUE;
-        keyColor[7] = TFT_BLUE;
-        keyColor[8] = TFT_BLUE;        
-      }
-      if(audioMode == 2){
-        keyColor[0] = TFT_DARKGREY;
-        keyColor[1] = TFT_BLUE; 
-        keyColor[2] = TFT_DARKGREY;
-        keyColor[3] = TFT_BLUE;
-        keyColor[4] = TFT_DARKGREY;
-        keyColor[5] = TFT_DARKGREY;
-        keyColor[6] = TFT_DARKGREY;
-        keyColor[7] = TFT_DARKGREY;
-        keyColor[8] = TFT_DARKGREY;        
-      }
-      if(audioMode == 3){
-        keyColor[0] = TFT_DARKGREY;
-        keyColor[1] = TFT_BLUE; 
-        keyColor[2] = TFT_DARKGREY;
-        keyColor[3] = TFT_DARKGREY;
-        keyColor[4] = TFT_BLUE;
-        keyColor[5] = TFT_DARKGREY;
-        keyColor[6] = TFT_DARKGREY;
-        keyColor[7] = TFT_DARKGREY;
-        keyColor[8] = TFT_DARKGREY;        
-      }
-      if(audioMode == 4){
-        keyColor[0] = TFT_DARKGREY;
-        keyColor[1] = TFT_BLUE; 
-        keyColor[2] = TFT_DARKGREY;
-        keyColor[3] = TFT_DARKGREY;
-        keyColor[4] = TFT_DARKGREY;
-        keyColor[5] = TFT_BLUE;
-        keyColor[6] = TFT_DARKGREY;
-        keyColor[7] = TFT_DARKGREY;
-        keyColor[8] = TFT_DARKGREY;        
-      }
-
-      if(audioMode == 5){
-        keyColor[0] = TFT_DARKGREY;
-        keyColor[1] = TFT_BLUE; 
-        keyColor[2] = TFT_DARKGREY;
-        keyColor[3] = TFT_DARKGREY;
-        keyColor[4] = TFT_DARKGREY;
-        keyColor[5] = TFT_DARKGREY;
-        keyColor[6] = TFT_BLUE;
-        keyColor[7] = TFT_DARKGREY;
-        keyColor[8] = TFT_DARKGREY;        
-      }   
-
-      if(audioMode == 6){
-        keyColor[0] = TFT_DARKGREY;
-        keyColor[1] = TFT_BLUE; 
-        keyColor[2] = TFT_DARKGREY;
-        keyColor[3] = TFT_DARKGREY;
-        keyColor[4] = TFT_DARKGREY;
-        keyColor[5] = TFT_DARKGREY;
-        keyColor[6] = TFT_DARKGREY;
-        keyColor[7] = TFT_BLUE;
-        keyColor[8] = TFT_DARKGREY;        
-      } 
-
-      if(audioMode == 7){
-        keyColor[0] = TFT_DARKGREY;
-        keyColor[1] = TFT_BLUE; 
-        keyColor[2] = TFT_DARKGREY;
-        keyColor[3] = TFT_DARKGREY;
-        keyColor[4] = TFT_DARKGREY;
-        keyColor[5] = TFT_DARKGREY;
-        keyColor[6] = TFT_DARKGREY;
-        keyColor[7] = TFT_DARKGREY;
-        keyColor[8] = TFT_BLUE;        
-      }              
+      
 
       key[b].initButton(&tft, KEY_X + col * (KEY_W + KEY_SPACING_X),
                         KEY_Y + row * (KEY_H + KEY_SPACING_Y), // x, y, w, h, outline, fill, text
@@ -648,8 +603,8 @@ void recordMotion() {
   TIMERDISPreset();
 
   if (mode < 10) {//writerはmodeが1～9
+    drawKeypad();
     if (mode == 1) {
-      drawKeypad();
       // ファイルの作成とデータの書き込み
       file = SPIFFS.open("/test1.txt", FILE_WRITE);
       if (!file) {
@@ -1340,7 +1295,6 @@ void loop(void) {
 
     if (key[b].justPressed()) {
       key[b].drawButton(true);  // draw invert
-      drawKeypad();// Draw keypad
 
 
       if (b == 0) {
@@ -1382,6 +1336,7 @@ void loop(void) {
         DISPwrite("b=7");
         sw05State = 0;
       }
+      drawKeypad();
 
     }
     //DISPprint();
