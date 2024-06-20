@@ -15,7 +15,7 @@ String numberBuffer1 = "test";
 BluetoothSerial SerialBT;
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "TFT Ver. 0.8.0"
+#define VERSION_NUMBER  "ver. 0.8.2"
 // -----------------------------------
 
 
@@ -666,8 +666,6 @@ void recordMotion() {
         stopRecording = true;
       }
       if (stopRecording) { // STOPボタンが押されたかどうかをチェック
-        DISPwrite("STOPPED");
-        stopRecording = false;
         for (int i = 3; i < 9; i++) {
           keyColor[i] = TFT_RED; // 数字ボタンを赤色に変更
         }
@@ -736,6 +734,9 @@ void recordMotion() {
 
     if (!stopRecording) { // STOPボタンが押されていない場合
       DISPwrite("COMPLETE");
+    } else {
+      DISPwrite("STOPPED");
+      stopRecording = false;
     }
     
     file.close();
@@ -837,8 +838,6 @@ void playMotion() {
         stopPlaying = true;
       }
       if (stopPlaying) { // STOPボタンが押されたかどうかをチェック
-        DISPwrite("STOPPED");
-        stopPlaying = false;
         for (int i = 3; i < 9; i++) {
           keyColor[i] = TFT_DARKGREEN; // 数字ボタンを緑色に変更
         }
@@ -932,6 +931,9 @@ void playMotion() {
 
     if (!stopPlaying) { // STOPボタンが押されていない場合
       DISPwrite("COMPLETE");
+    } else {
+      DISPwrite("STOPPED");
+      stopPlaying = false;
     }
 
     //dxl.torqueEnable(TARGET_ID1, false);
@@ -1152,7 +1154,7 @@ void setup() {
   DYNAMIXEL_SERIAL.begin(1000000);
   dxl.attach(DYNAMIXEL_SERIAL, 1000000);
   Serial.begin(115200);
-  SerialBT.begin("OryArm"); // Bluetooth device name
+  SerialBT.begin("YushunArm"); // Bluetooth device name
   Serial.println("The device started, now you can pair it with bluetooth!");
 
   dxl.addModel<DxlModel::X>(TARGET_ID1);
@@ -1163,9 +1165,6 @@ void setup() {
   dxl.addModel<DxlModel::X>(TARGET_ID6);
   dxl.addModel<DxlModel::X>(TARGET_ID7);
   dxl.addModel<DxlModel::X>(TARGET_ID8);
-
-  Serial.println(VERSION_NUMBER);
-  delay(2000);
 
   dxl.torqueEnable(TARGET_ID1, false);
   dxl.torqueEnable(TARGET_ID2, false);
@@ -1192,6 +1191,8 @@ void setup() {
   pinMode(pin1, OUTPUT);
   pinMode(pin2, OUTPUT);
   pinMode(pin3, OUTPUT);
+  
+  
 
   tft.init();  // Initialise the TFT screen
   tft.setRotation(0);// Set the rotation before we calibrate
@@ -1208,6 +1209,11 @@ void setup() {
   tft.drawRect(TIMERDISP_X, TIMERDISP_Y, TIMERDISP_W, TIMERDISP_H, TFT_WHITE);
 
   drawKeypad();// Draw keypad
+  
+  Serial.println(VERSION_NUMBER);
+  DISPwrite(VERSION_NUMBER);
+  delay(2000);
+
   Serial.println("mode= " + mode);
   Serial.print("sw01State= " + sw01State);
 
