@@ -15,12 +15,14 @@ String numberBuffer1 = "test";
 BluetoothSerial SerialBT;
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "TFT Ver. 0.7.3"
+#define VERSION_NUMBER  "TFT Ver. 0.8.0"
 // -----------------------------------
 
 
 bool onlyLeftArm = false; //左手のみを使用するかどうか
 bool mainloop = false;
+bool stopRecording = false; //STOPボタンが押されたかどうか
+bool stopPlaying = false; //STOPボタンが押されたかどうか
 int exception = 2400;   //手が全開で脱力する時の閾値 左腕:1800
 
 const uint8_t PIN_RTS = 11;
@@ -361,6 +363,23 @@ void drawKeypad() {
 
       if (b < 3) tft.setFreeFont(LABEL1_FONT);
       else tft.setFreeFont(LABEL2_FONT);
+
+      // モードが1から9（録画モード）なら「MODE」を「STOP」に変更
+      if (b == 1 && ((0 < mode  && mode < 10) || (10 < mode  && mode < 20))) {
+        keyLabel[b][0] = 'S';
+        keyLabel[b][1] = 'T';
+        keyLabel[b][2] = 'O';
+        keyLabel[b][3] = 'P';
+        keyLabel[b][4] = '\0';
+      } else if (b == 1 && (mode < 1 || mode == 10 || 20 < mode)) {
+        keyLabel[b][0] = 'M';
+        keyLabel[b][1] = 'O';
+        keyLabel[b][2] = 'D';
+        keyLabel[b][3] = 'E';
+        keyLabel[b][4] = '\0';
+      }
+
+      
       if(audioMode == 0) {
           keyColor[0] = TFT_DARKGREEN;
           keyColor[1] = TFT_DARKGREY;
@@ -640,6 +659,24 @@ void recordMotion() {
     dxl.torqueEnable(TARGET_ID8, false);
 
     for (int i = 0; i < defaultRecordNumber; i++) {
+      // STOPボタンが押されたかどうかをチェック
+      uint16_t t_x = 0, t_y = 0; // To store the touch coordinates
+      bool pressed = tft.getTouch(&t_x, &t_y);
+      if (pressed && key[1].contains(t_x, t_y)) {
+        stopRecording = true;
+      }
+      if (stopRecording) { // STOPボタンが押されたかどうかをチェック
+        DISPwrite("STOPPED");
+        stopRecording = false;
+        for (int i = 3; i < 9; i++) {
+          keyColor[i] = TFT_RED; // 数字ボタンを赤色に変更
+        }
+        mode = 0;
+        drawKeypad();
+        break;
+      }
+
+
       DISPwrite(String(i)+"/"+String(defaultRecordNumber));
       
       UNDERDISPwrite(String(mode)+", "+String(targetPos01)+", "+String(targetPos02)+", "+String(targetPos03)+", "+String(targetPos04));
@@ -697,7 +734,9 @@ void recordMotion() {
 
     }
 
-    DISPwrite("COMPLETE");
+    if (!stopRecording) { // STOPボタンが押されていない場合
+      DISPwrite("COMPLETE");
+    }
     
     file.close();
   }
@@ -791,6 +830,21 @@ void playMotion() {
 
     // シリアルモニタにデータを表示&モータ実行
     for (int i = 0; i < defaultRecordNumber; i++) {
+      // STOPボタンが押されたかどうかをチェック
+      uint16_t t_x = 0, t_y = 0; // To store the touch coordinates
+      bool pressed = tft.getTouch(&t_x, &t_y);
+      if (pressed && key[1].contains(t_x, t_y)) {
+        stopPlaying = true;
+      }
+      if (stopPlaying) { // STOPボタンが押されたかどうかをチェック
+        DISPwrite("STOPPED");
+        stopPlaying = false;
+        for (int i = 3; i < 9; i++) {
+          keyColor[i] = TFT_DARKGREEN; // 数字ボタンを緑色に変更
+        }
+        drawKeypad();
+        break;
+      }
 
 
       int ss1 = values[i * number];
@@ -876,7 +930,9 @@ void playMotion() {
 
     }
 
-    DISPwrite("COMPLETE");
+    if (!stopPlaying) { // STOPボタンが押されていない場合
+      DISPwrite("COMPLETE");
+    }
 
     //dxl.torqueEnable(TARGET_ID1, false);
     //dxl.torqueEnable(TARGET_ID2, false);
@@ -1206,7 +1262,11 @@ void loop(void) {
       }
 
       if (b == 1) {
-        DISPwrite("MODE b=1");
+        if (mode >= 1 && mode <= 9) {
+          stopRecording = true; // STOPボタンが押された場合
+        } else {
+          DISPwrite("MODE b=1");
+        }
       }
 
       if (b == 2) {
