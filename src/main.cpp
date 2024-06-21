@@ -15,8 +15,10 @@ String numberBuffer1 = "test";
 BluetoothSerial SerialBT;
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.8.2"
+#define VERSION_NUMBER  "ver. 0.8.3"
 // -----------------------------------
+
+String bluetoothDeviceName = "YushunArm";
 
 
 bool onlyLeftArm = false; //左手のみを使用するかどうか
@@ -1154,7 +1156,7 @@ void setup() {
   DYNAMIXEL_SERIAL.begin(1000000);
   dxl.attach(DYNAMIXEL_SERIAL, 1000000);
   Serial.begin(115200);
-  SerialBT.begin("YushunArm"); // Bluetooth device name
+  SerialBT.begin(bluetoothDeviceName); // Bluetooth device name
   Serial.println("The device started, now you can pair it with bluetooth!");
 
   dxl.addModel<DxlModel::X>(TARGET_ID1);
@@ -1210,9 +1212,12 @@ void setup() {
 
   drawKeypad();// Draw keypad
   
-  Serial.println(VERSION_NUMBER);
+  // Use GLCD font for smaller text
+  tft.setTextDatum(TL_DATUM);
+  tft.setTextFont(1);  // Set font to GLCD font
   DISPwrite(VERSION_NUMBER);
   delay(2000);
+  DISPwrite(bluetoothDeviceName);
 
   Serial.println("mode= " + mode);
   Serial.print("sw01State= " + sw01State);
