@@ -15,12 +15,16 @@ String numberBuffer1 = "test";
 BluetoothSerial SerialBT;
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "TFT Ver. 0.7.0"
+#define VERSION_NUMBER  "ver. 0.8.3"
 // -----------------------------------
+
+String bluetoothDeviceName = "YushunArm";
 
 
 bool onlyLeftArm = false; //左手のみを使用するかどうか
 bool mainloop = false;
+bool stopRecording = false; //STOPボタンが押されたかどうか
+bool stopPlaying = false; //STOPボタンが押されたかどうか
 int exception = 2400;   //手が全開で脱力する時の閾値 左腕:1800
 
 const uint8_t PIN_RTS = 11;
@@ -54,7 +58,7 @@ int z = 0; //フリーの時、落下防止に動きを遅くするフラグ
 int ran1, ran2, ran3, ran4 = 0;
 int s08 = 0; //腕の角度
 
-int mode = 10; //1~9:モーション録画, 11~19:モーション再生
+int mode = 10; //1-9:モーション登録, 11-19:モーション再生
 int audioMode = 0; //0:初期値,
 
 int O_time = 0;
@@ -83,7 +87,7 @@ const uint8_t TARGET_ID6 = 6;
 const uint8_t TARGET_ID7 = 7;
 const uint8_t TARGET_ID8 = 8;
 
-const uint16_t DYNAMIXEL_BAUDRATE = 1000000;
+
 #define RXD2 16
 #define TXD2 17
 
@@ -157,30 +161,13 @@ uint16_t keyColor[9] = {
 TFT_eSPI_Button key[9];
 
 
-volatile int interruptCounter;
-int totalInterruptCounter;
-
-// hw_timer_t * timer = NULL;
-// portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
-
-//------------------------------------------------------------------------------------------
 
 
 
-
-
-//------------------------------------------------------------------------------------------
-
-
-
-// void IRAM_ATTR onTimer() {
-// 	portENTER_CRITICAL_ISR(&timerMux);
-// 	interruptCounter++;
-// 	portEXIT_CRITICAL_ISR(&timerMux);
-// }
 
 void DISPprint() {
   // Update the number display field
+
   tft.setTextDatum(TL_DATUM);        // Use top left corner as text coord datum
   tft.setFreeFont(&FreeSans18pt7b);  // Choose a nice font that fits box
   tft.setTextColor(DISP_TCOLOR);     // Set the font colour
@@ -194,6 +181,7 @@ void DISPprint() {
 
 
 void DISPreset() {
+
   tft.setTextDatum(TL_DATUM);        // Use top left corner as text coord datum
   tft.setFreeFont(&FreeSans18pt7b);  // Choose a nice font that fits box
   tft.setTextColor(DISP_TCOLOR);     // Set the font colour
@@ -204,6 +192,7 @@ void DISPreset() {
 }
 
 void DISPwrite(String A) {
+
   Serial.print("DISP= ");
   Serial.println(A);
   tft.setTextDatum(TL_DATUM);        // Use top left corner as text coord datum
@@ -220,6 +209,7 @@ void DISPwrite(String A) {
 
 void UNDERDISPprint() {
   // Update the number display field
+
   tft.setTextDatum(TL_DATUM);        // Use top left corner as text coord datum
   tft.setFreeFont(&FreeSans18pt7b);  // Choose a nice font that fits box
   tft.setTextColor(UNDERDISP_TCOLOR);     // Set the font colour
@@ -233,6 +223,7 @@ void UNDERDISPprint() {
 
 
 void UNDERDISPreset() {
+
   tft.setTextDatum(TL_DATUM);        // Use top left corner as text coord datum
   tft.setFreeFont(&FreeSans18pt7b);  // Choose a nice font that fits box
   tft.setTextColor(UNDERDISP_TCOLOR);     // Set the font colour
@@ -243,6 +234,7 @@ void UNDERDISPreset() {
 }
 
 void UNDERDISPwrite(String A) {
+
   tft.setTextDatum(TL_DATUM);        // Use top left corner as text coord datum
   tft.setFreeFont(&FreeSans18pt7b);  // Choose a nice font that fits box
   tft.setTextColor(UNDERDISP_TCOLOR);     // Set the font colour
@@ -257,6 +249,7 @@ void UNDERDISPwrite(String A) {
 
 void TIMERDISPprint() {
   // Update the number display field
+
   tft.setTextDatum(TL_DATUM);        // Use top left corner as text coord datum
   tft.setFreeFont(&FreeSans18pt7b);  // Choose a nice font that fits box
   tft.setTextColor(UNDERDISP_TCOLOR);     // Set the font colour
@@ -276,14 +269,15 @@ void TIMERDISPreset() {
 }
 
 void TIMERDISPwrite() {
+
   float progress = (float)TIMERLENGTH /   (float)timer ;
   int fillWidth = progress * TIMERDISP_W;
 
   tft.fillRect(TIMERDISP_X + 1 , TIMERDISP_Y + 1, fillWidth, TIMERDISP_H - 2, TFT_GREEN);
 }
 
-void touch_calibrate()
-{
+void touch_calibrate() {
+
   uint16_t calData[5];
   uint8_t calDataOK = 0;
 
@@ -351,6 +345,7 @@ void touch_calibrate()
 
 // Print something in the mini status bar
 void status(const char *msg) {
+
   tft.setTextPadding(240);
   //tft.setCursor(STATUS_X, STATUS_Y);
   tft.setTextColor(TFT_WHITE, TFT_DARKGREY);
@@ -361,121 +356,101 @@ void status(const char *msg) {
 }
 //------------------------------------------------------------------------------------------
 
-void drawKeypad()
-{
+void drawKeypad() {
   // Draw the keys
+
   for (uint8_t row = 0; row < 3; row++) {
     for (uint8_t col = 0; col < 3; col++) {
       uint8_t b = col + row * 3;
 
       if (b < 3) tft.setFreeFont(LABEL1_FONT);
       else tft.setFreeFont(LABEL2_FONT);
-      if(audioMode == 0){
-        
-        if(mode > 9){
+
+      // モードが1から9（録画モード）なら「MODE」を「STOP」に変更
+      if (b == 1 && ((0 < mode  && mode < 10) || (10 < mode  && mode < 20))) {
+        keyLabel[b][0] = 'S';
+        keyLabel[b][1] = 'T';
+        keyLabel[b][2] = 'O';
+        keyLabel[b][3] = 'P';
+        keyLabel[b][4] = '\0';
+      } else if (b == 1 && (mode < 1 || mode == 10 || 20 < mode)) {
+        keyLabel[b][0] = 'M';
+        keyLabel[b][1] = 'O';
+        keyLabel[b][2] = 'D';
+        keyLabel[b][3] = 'E';
+        keyLabel[b][4] = '\0';
+      }
+
+      
+      if(audioMode == 0) {
           keyColor[0] = TFT_DARKGREEN;
-          keyColor[1] = TFT_DARKGREY; 
-          keyColor[2] = TFT_RED;                 
+          keyColor[1] = TFT_DARKGREY;
+          keyColor[2] = TFT_RED;
+        
+        if (mode == 0){
+          keyColor[3] = TFT_RED;
+          keyColor[4] = TFT_RED;
+          keyColor[5] = TFT_RED;
+          keyColor[6] = TFT_RED;
+          keyColor[7] = TFT_RED;
+          keyColor[8] = TFT_RED;
+        }
+
+        if(mode == 10){
           keyColor[3] = TFT_DARKGREEN;
           keyColor[4] = TFT_DARKGREEN;
           keyColor[5] = TFT_DARKGREEN;
           keyColor[6] = TFT_DARKGREEN;
           keyColor[7] = TFT_DARKGREEN;
           keyColor[8] = TFT_DARKGREEN;
-        }else{
-          keyColor[0] = TFT_DARKGREEN;
-          keyColor[1] = TFT_DARKGREY; 
-          keyColor[2] = TFT_RED;
-          keyColor[3] = TFT_RED;
-          keyColor[4] = TFT_RED;
-          keyColor[5] = TFT_RED;
-          keyColor[6] = TFT_RED;
-          keyColor[7] = TFT_RED;
-          keyColor[8] = TFT_RED;        
-        }                                                
-      }
-      
-      if(audioMode == 1){
-        keyColor[0] = TFT_DARKGREY;
-        keyColor[1] = TFT_BLUE; 
-        keyColor[2] = TFT_DARKGREY;
-        keyColor[3] = TFT_BLUE;
-        keyColor[4] = TFT_BLUE;
-        keyColor[5] = TFT_BLUE;
-        keyColor[6] = TFT_BLUE;
-        keyColor[7] = TFT_BLUE;
-        keyColor[8] = TFT_BLUE;        
-      }
-      if(audioMode == 2){
-        keyColor[0] = TFT_DARKGREY;
-        keyColor[1] = TFT_BLUE; 
-        keyColor[2] = TFT_DARKGREY;
-        keyColor[3] = TFT_BLUE;
-        keyColor[4] = TFT_DARKGREY;
-        keyColor[5] = TFT_DARKGREY;
-        keyColor[6] = TFT_DARKGREY;
-        keyColor[7] = TFT_DARKGREY;
-        keyColor[8] = TFT_DARKGREY;        
-      }
-      if(audioMode == 3){
-        keyColor[0] = TFT_DARKGREY;
-        keyColor[1] = TFT_BLUE; 
-        keyColor[2] = TFT_DARKGREY;
-        keyColor[3] = TFT_DARKGREY;
-        keyColor[4] = TFT_BLUE;
-        keyColor[5] = TFT_DARKGREY;
-        keyColor[6] = TFT_DARKGREY;
-        keyColor[7] = TFT_DARKGREY;
-        keyColor[8] = TFT_DARKGREY;        
-      }
-      if(audioMode == 4){
-        keyColor[0] = TFT_DARKGREY;
-        keyColor[1] = TFT_BLUE; 
-        keyColor[2] = TFT_DARKGREY;
-        keyColor[3] = TFT_DARKGREY;
-        keyColor[4] = TFT_DARKGREY;
-        keyColor[5] = TFT_BLUE;
-        keyColor[6] = TFT_DARKGREY;
-        keyColor[7] = TFT_DARKGREY;
-        keyColor[8] = TFT_DARKGREY;        
-      }
+        }
+        
 
-      if(audioMode == 5){
-        keyColor[0] = TFT_DARKGREY;
-        keyColor[1] = TFT_BLUE; 
-        keyColor[2] = TFT_DARKGREY;
-        keyColor[3] = TFT_DARKGREY;
-        keyColor[4] = TFT_DARKGREY;
-        keyColor[5] = TFT_DARKGREY;
-        keyColor[6] = TFT_BLUE;
-        keyColor[7] = TFT_DARKGREY;
-        keyColor[8] = TFT_DARKGREY;        
-      }   
+        if (0 < mode && mode < 10) {
+          for (int i = 3; i < 9; i++) {
+            if (i == mode + 2){
+              keyColor[i] = TFT_RED;
+            } else {
+              keyColor[i] = TFT_DARKGREY;
+            }
+          }
+        }
 
-      if(audioMode == 6){
-        keyColor[0] = TFT_DARKGREY;
-        keyColor[1] = TFT_BLUE; 
-        keyColor[2] = TFT_DARKGREY;
-        keyColor[3] = TFT_DARKGREY;
-        keyColor[4] = TFT_DARKGREY;
-        keyColor[5] = TFT_DARKGREY;
-        keyColor[6] = TFT_DARKGREY;
-        keyColor[7] = TFT_BLUE;
-        keyColor[8] = TFT_DARKGREY;        
-      } 
+        if (10 < mode && mode < 20) {
+          for (int i = 3; i < 9; i++) {
+            if (i == mode - 8){
+              keyColor[i] = TFT_DARKGREEN;
+            } else {
+              keyColor[i] = TFT_DARKGREY;
+            }
+          }
+        }
 
-      if(audioMode == 7){
+      }
+      else {
         keyColor[0] = TFT_DARKGREY;
-        keyColor[1] = TFT_BLUE; 
+        keyColor[1] = TFT_BLUE;
         keyColor[2] = TFT_DARKGREY;
-        keyColor[3] = TFT_DARKGREY;
-        keyColor[4] = TFT_DARKGREY;
-        keyColor[5] = TFT_DARKGREY;
-        keyColor[6] = TFT_DARKGREY;
-        keyColor[7] = TFT_DARKGREY;
-        keyColor[8] = TFT_BLUE;        
-      }              
 
+        if(audioMode == 1){
+          keyColor[3] = TFT_BLUE;
+          keyColor[4] = TFT_BLUE;
+          keyColor[5] = TFT_BLUE;
+          keyColor[6] = TFT_BLUE;
+          keyColor[7] = TFT_BLUE;
+          keyColor[8] = TFT_BLUE;        
+        }
+
+        if (1 < audioMode && audioMode < 8) {
+          for (int i = 3; i < 9; i++) {
+            if (i == audioMode + 1){
+              keyColor[i] = TFT_BLUE;
+            } else {
+              keyColor[i] = TFT_DARKGREY;
+            }
+          }
+        }
+      }
       key[b].initButton(&tft, KEY_X + col * (KEY_W + KEY_SPACING_X),
                         KEY_Y + row * (KEY_H + KEY_SPACING_Y), // x, y, w, h, outline, fill, text
                         KEY_W, KEY_H, TFT_WHITE, keyColor[b], TFT_WHITE,
@@ -485,16 +460,8 @@ void drawKeypad()
   }
 }
 
-//------------------------------------------------------------------------------------------
-
-
-//------------------------------------------------------------------------------------------
-
-
-
-
-
 void Pgain_on() {
+  
   if (serialnumberI > 1) {
     dxl.positionPGain(TARGET_ID1, serialnumberP);
     dxl.positionPGain(TARGET_ID2, serialnumberP);
@@ -503,18 +470,17 @@ void Pgain_on() {
     dxl.positionPGain(TARGET_ID6, 500);
     dxl.positionPGain(TARGET_ID7, 500);
     dxl.positionPGain(TARGET_ID8, 1200);
-
-
   }
 }
 
-
 void range(int a1, int a2) {
+
   int r = 230;
   if (a1 < a2 + r && a2 - r < a1)z = z + 1;
 }
 
 void zero() { //フリーの時、落下防止に動きを遅くするフラグをONにする
+
   z = 1;
   int de = 1; delay(de);
   targetPos01 = dxl.presentPosition(TARGET_ID1); delay(de);
@@ -533,13 +499,6 @@ void zero() { //フリーの時、落下防止に動きを遅くするフラグ�
 }
 
 void slow() { //条件がONの時、スローにする。ただし腕が全開の時は例外とする
-
-
-  // if (s08 < exception) { //腕が全開の時の数字
-  //   // digitalWrite(led01, 0);
-  //   // digitalWrite(led02, HIGH);
-  //   // digitalWrite(led03, 0);
-  // }
 
   if (onlyLeftArm == true) {
     if (z > 0 && s08 < exception) {
@@ -603,13 +562,10 @@ void slow() { //条件がONの時、スローにする。ただし腕が全開�
       dxl.torqueEnable(TARGET_ID6, false);
     }
   }
-
 }
 
-
-
-
 void demo() {
+
   Serial.print("mode= ");//デモの時は基本10になっている。
   Serial.print(mode);
   int de = 5;
@@ -635,12 +591,12 @@ void demo() {
 
   zero();
   slow();
-  //Serial.print("mode= ");
-  //Serial.println(mode);
 }
 
 
 void recordMotion() {
+  // ファイルの書き込み
+
   DISPreset();
   numberBuffer1 = "Writer";
   DISPprint();
@@ -648,8 +604,8 @@ void recordMotion() {
   TIMERDISPreset();
 
   if (mode < 10) {//writerはmodeが1～9
+    drawKeypad();
     if (mode == 1) {
-      drawKeypad();
       // ファイルの作成とデータの書き込み
       file = SPIFFS.open("/test1.txt", FILE_WRITE);
       if (!file) {
@@ -705,6 +661,22 @@ void recordMotion() {
     dxl.torqueEnable(TARGET_ID8, false);
 
     for (int i = 0; i < defaultRecordNumber; i++) {
+      // STOPボタンが押されたかどうかをチェック
+      uint16_t t_x = 0, t_y = 0; // To store the touch coordinates
+      bool pressed = tft.getTouch(&t_x, &t_y);
+      if (pressed && key[1].contains(t_x, t_y)) {
+        stopRecording = true;
+      }
+      if (stopRecording) { // STOPボタンが押されたかどうかをチェック
+        for (int i = 3; i < 9; i++) {
+          keyColor[i] = TFT_RED; // 数字ボタンを赤色に変更
+        }
+        mode = 0;
+        drawKeypad();
+        break;
+      }
+
+
       DISPwrite(String(i)+"/"+String(defaultRecordNumber));
       
       UNDERDISPwrite(String(mode)+", "+String(targetPos01)+", "+String(targetPos02)+", "+String(targetPos03)+", "+String(targetPos04));
@@ -762,7 +734,12 @@ void recordMotion() {
 
     }
 
-    DISPwrite("COMPLETE");
+    if (!stopRecording) { // STOPボタンが押されていない場合
+      DISPwrite("COMPLETE");
+    } else {
+      DISPwrite("STOPPED");
+      stopRecording = false;
+    }
     
     file.close();
   }
@@ -856,6 +833,19 @@ void playMotion() {
 
     // シリアルモニタにデータを表示&モータ実行
     for (int i = 0; i < defaultRecordNumber; i++) {
+      // STOPボタンが押されたかどうかをチェック
+      uint16_t t_x = 0, t_y = 0; // To store the touch coordinates
+      bool pressed = tft.getTouch(&t_x, &t_y);
+      if (pressed && key[1].contains(t_x, t_y)) {
+        stopPlaying = true;
+      }
+      if (stopPlaying) { // STOPボタンが押されたかどうかをチェック
+        for (int i = 3; i < 9; i++) {
+          keyColor[i] = TFT_DARKGREEN; // 数字ボタンを緑色に変更
+        }
+        drawKeypad();
+        break;
+      }
 
 
       int ss1 = values[i * number];
@@ -941,7 +931,12 @@ void playMotion() {
 
     }
 
-    DISPwrite("COMPLETE");
+    if (!stopPlaying) { // STOPボタンが押されていない場合
+      DISPwrite("COMPLETE");
+    } else {
+      DISPwrite("STOPPED");
+      stopPlaying = false;
+    }
 
     //dxl.torqueEnable(TARGET_ID1, false);
     //dxl.torqueEnable(TARGET_ID2, false);
@@ -954,13 +949,7 @@ void playMotion() {
     mode = 0;
     zero();
     slow();
-
-
-
   }
-
-  //turnOffLed();
-
 }
 
 
@@ -968,15 +957,8 @@ void playMotion() {
 //オーディオインタフェースモード
 void audioLoop() {
   
-  
- // delay(10);
   O_time++;
-
-  //Serial.print("audioMode = ");
-  //Serial.println(audioMode);
-
   if (audioMode == 1) {
-
     drawKeypad();
     delay(1000);
     audioMode = 2;
@@ -985,107 +967,70 @@ void audioLoop() {
   swAudioState = digitalRead(swAudio);  //場所を変えない
 
   if (audioMode == 2) {
-    //    digitalWrite(led01, HIGH);
-    //    digitalWrite(led02, LOW);
-    //    digitalWrite(led03, LOW);
     drawKeypad();
     if (swAudioState == 0) {
       mode = 11;
       audioMode = -1;
       O_time = 0;
-  //    Serial.print("mode= ");  
-  //    Serial.println(mode);
       playMotion();
     }
   }
 
   if (audioMode == 3) {
-    //    digitalWrite(led01, LOW);
-    //    digitalWrite(led02, HIGH);
-    //    digitalWrite(led03, LOW);
     drawKeypad();
     if (swAudioState == 0) {
       mode = 12;
       audioMode = -1;
       O_time = 0;
-   //   Serial.print("mode= ");  
-   //   Serial.println(mode);
       playMotion();
     }
   }
 
   if (audioMode == 4) {
-    //    digitalWrite(led01, LOW);
-    //    digitalWrite(led02, LOW);
-    //    digitalWrite(led03, HIGH);
     drawKeypad();
     if (swAudioState == 0) {
       mode = 13;
       audioMode = -1;
       O_time = 0;
-  //    Serial.print("mode= ");  
-  //    Serial.println(mode);
       playMotion();
     }
   }
 
   if (audioMode == 5) {
-    //    digitalWrite(led01, LOW);
-    //    digitalWrite(led02, LOW);
-    //    digitalWrite(led03, HIGH);
     drawKeypad();
     if (swAudioState == 0) {
       mode = 14;
       audioMode = -1;
       O_time = 0;
-  //    Serial.print("mode= ");  
-  //    Serial.println(mode);
       playMotion();
     }
   }
 
   if (audioMode == 6) {
-    //    digitalWrite(led01, LOW);
-    //    digitalWrite(led02, LOW);
-    //    digitalWrite(led03, HIGH);
     drawKeypad();
     if (swAudioState == 0) {
       mode = 15;
       audioMode = -1;
       O_time = 0;
-  //    Serial.print("mode= ");  
-  //    Serial.println(mode);
       playMotion();
     }
   }
 
   if (audioMode == 7) {
-    //    digitalWrite(led01, LOW);
-    //    digitalWrite(led02, LOW);
-    //    digitalWrite(led03, HIGH);
     drawKeypad();
     if (swAudioState == 0) {
       mode = 16;
       audioMode = -1;
       O_time = 0;
-  //    Serial.print("mode= ");  
-  //    Serial.println(mode);
       playMotion();
     }
   }
 
   if (audioMode == 8) {
     audioMode = 0;
-    drawKeypad();    
-    //    turnOffLed();
+    drawKeypad();
   }
 
-  // if (audioMode == -1){
-  //   if (swAudioState == HIGH){
-  //     audioMode = 0;
-  //     O_time = 0;
-  //   }
-  // }
 
   if (audioMode > 1 && O_time > O_t) {
     audioMode++;
@@ -1098,8 +1043,6 @@ void audioLoop() {
   }
 
 }
-
-
 
 
 void armloop() {
@@ -1118,8 +1061,6 @@ void armloop() {
     if (SerialBT.available()) {
       receivedChar = SerialBT.read();
     }
-
-
 
 
     //mode=0（RECモードの時）、ボタンを押されたらモーション記録プロセスへ
@@ -1154,7 +1095,6 @@ void armloop() {
       mode = 10;
       sw05State = 1;
     }
-
 
 
     //mode=10（RUNモードの時）、ボタンを押されたらモーション再生プロセスへ
@@ -1205,13 +1145,6 @@ void armloop() {
       receivedChar = 0;
       sw05State = 1;
     }
-
-    // dxl.torqueEnable(TARGET_ID1, true);
-    // dxl.torqueEnable(TARGET_ID2, true);
-    // dxl.torqueEnable(TARGET_ID4, true);
-    
-
-
   }
 }
 
@@ -1223,7 +1156,7 @@ void setup() {
   DYNAMIXEL_SERIAL.begin(1000000);
   dxl.attach(DYNAMIXEL_SERIAL, 1000000);
   Serial.begin(115200);
-  SerialBT.begin("OryArm"); // Bluetooth device name
+  SerialBT.begin(bluetoothDeviceName); // Bluetooth device name
   Serial.println("The device started, now you can pair it with bluetooth!");
 
   dxl.addModel<DxlModel::X>(TARGET_ID1);
@@ -1234,9 +1167,6 @@ void setup() {
   dxl.addModel<DxlModel::X>(TARGET_ID6);
   dxl.addModel<DxlModel::X>(TARGET_ID7);
   dxl.addModel<DxlModel::X>(TARGET_ID8);
-
-  Serial.println(VERSION_NUMBER);
-  delay(2000);
 
   dxl.torqueEnable(TARGET_ID1, false);
   dxl.torqueEnable(TARGET_ID2, false);
@@ -1263,9 +1193,8 @@ void setup() {
   pinMode(pin1, OUTPUT);
   pinMode(pin2, OUTPUT);
   pinMode(pin3, OUTPUT);
-
-  //turnOffLed();
-  //mode = 10;
+  
+  
 
   tft.init();  // Initialise the TFT screen
   tft.setRotation(0);// Set the rotation before we calibrate
@@ -1282,6 +1211,14 @@ void setup() {
   tft.drawRect(TIMERDISP_X, TIMERDISP_Y, TIMERDISP_W, TIMERDISP_H, TFT_WHITE);
 
   drawKeypad();// Draw keypad
+  
+  // Use GLCD font for smaller text
+  tft.setTextDatum(TL_DATUM);
+  tft.setTextFont(1);  // Set font to GLCD font
+  DISPwrite(VERSION_NUMBER);
+  delay(2000);
+  DISPwrite(bluetoothDeviceName);
+
   Serial.println("mode= " + mode);
   Serial.print("sw01State= " + sw01State);
 
@@ -1291,17 +1228,8 @@ void setup() {
 	// timerAlarmEnable(timer);
 
   pinMode(swAudio, INPUT_PULLUP);
-
-  
   Serial.println("setup done");
-  
 }
-
-
-
-
-
-
 
 
 void loop(void) {
@@ -1335,13 +1263,9 @@ void loop(void) {
 
     if (b < 3) tft.setFreeFont(LABEL1_FONT);
     else tft.setFreeFont(LABEL2_FONT);
-
-    if (key[b].justReleased()) key[b].drawButton();     // draw normal
-
+    if (key[b].justReleased()) key[b].drawButton();
     if (key[b].justPressed()) {
-      key[b].drawButton(true);  // draw invert
-      drawKeypad();// Draw keypad
-
+      key[b].drawButton(true);
 
       if (b == 0) {
         DISPwrite("RUN b=0");
@@ -1349,14 +1273,17 @@ void loop(void) {
       }
 
       if (b == 1) {
-        DISPwrite("MODE b=1");
+        if (mode >= 1 && mode <= 9) {
+          stopRecording = true; // STOPボタンが押された場合
+        } else {
+          DISPwrite("MODE b=1");
+        }
       }
 
       if (b == 2) {
         DISPwrite("REC b=2");
         mode = 0;
       }
-
 
       if (b == 3 ) {
         DISPwrite("b=3");
@@ -1382,6 +1309,7 @@ void loop(void) {
         DISPwrite("b=7");
         sw05State = 0;
       }
+      drawKeypad();
 
     }
     //DISPprint();
@@ -1397,9 +1325,9 @@ void loop(void) {
   if (swAudioState == 0) {
     audioMode = 1;
   }
-  Serial.print("  audioMode= ");
+  Serial.print(" audioMode= ");
   Serial.print(audioMode);
-  Serial.print("  swAudioState= ");
+  Serial.print(" swAudioState= ");
   Serial.print(swAudioState);
 
 }
