@@ -15,7 +15,7 @@ String numberBuffer1 = "test";
 BluetoothSerial SerialBT;
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.8.3"
+#define VERSION_NUMBER  "ver. 0.9.0"
 // -----------------------------------
 
 String bluetoothDeviceName = "YushunArm";
@@ -25,7 +25,8 @@ bool onlyLeftArm = false; //左手のみを使用するかどうか
 bool mainloop = false;
 bool stopRecording = false; //STOPボタンが押されたかどうか
 bool stopPlaying = false; //STOPボタンが押されたかどうか
-int exception = 2400;   //手が全開で脱力する時の閾値 左腕:1800
+int rightHandException = 2400;   //手が全開で脱力する時の閾値
+int leftHandException = 800;   //手が全開で脱力する時の閾値
 
 const uint8_t PIN_RTS = 11;
 
@@ -34,9 +35,9 @@ const int pin2 = 22;
 const int pin3 = 25;
 
 const int defaultRecordNumber = 200;  //デフォルトの録画する数
-int number = 9; //←ここの数字はID+1とする 呼び出す数
-int values[defaultRecordNumber * 9 ]; //←ここの数字はID＋１とする
-char buffer[16]; // 数値の一時的な保持のためのバッファ
+int number = 17; //←ここの数字はID+1とする 呼び出す数
+int values[defaultRecordNumber * 17 ]; //←ここの数字はID＋１とする
+char buffer[24]; // 数値の一時的な保持のためのバッファ
 
 
 const int timer = defaultRecordNumber;
@@ -46,17 +47,28 @@ int TIMERLENGTH = 0;
 int sw00State = 1, sw02State = 1, sw03State = 1, sw04State = 1, sw05State = 1, swAudioState = 1;
 int sw01State = 1;
 int targetPos01, targetPos02, targetPos03, targetPos04, targetPos05, targetPos06, targetPos07, targetPos08 = 0;
+int targetPos11, targetPos12, targetPos13, targetPos14, targetPos15, targetPos16, targetPos17, targetPos18 = 0;
+
 
 int s1, s2, s3, s4, s5, s6, s7, s8 = 0;
+int s11, s12, s13, s14, s15, s16, s17, s18 = 0;
 char receivedChar = 0;
 
 const int s1diference = 500; //id:01モータの目標値と実測値の差分 この差分を超えるとモーションを終了する
 const int s2diference = 400; //id:02モータの目標値と実測値の差分 この差分を超えるとモーションを終了する
 const int s4diference = 800; //id:04モータの目標値と実測値の差分 この差分を超えるとモーションを終了する
 
-int z = 0; //フリーの時、落下防止に動きを遅くするフラグ
+const int s11diference = 500; //id:11モータの目標値と実測値の差分 この差分を超えるとモーションを終了する
+const int s12diference = 400; //id:12モータの目標値と実測値の差分 この差分を超えるとモーションを終了する
+const int s14diference = 800; //id:14モータの目標値と実測値の差分 この差分を超えるとモーションを終了する
+
+int rightArmFlag = 0; //フリーの時、落下防止に動きを遅くするフラグ
+int leftArmFlag = 0; //フリーの時、落下防止に動きを遅くするフラグ
+
 int ran1, ran2, ran3, ran4 = 0;
+int ran11, ran12, ran13, ran14 = 0;
 int s08 = 0; //腕の角度
+int s018 = 0; //腕の角度
 
 int mode = 10; //1-9:モーション登録, 11-19:モーション再生
 int audioMode = 0; //0:初期値,
@@ -86,6 +98,15 @@ const uint8_t TARGET_ID5 = 5;
 const uint8_t TARGET_ID6 = 6;
 const uint8_t TARGET_ID7 = 7;
 const uint8_t TARGET_ID8 = 8;
+
+const uint8_t TARGET_ID11 = 11;
+const uint8_t TARGET_ID12 = 12;
+const uint8_t TARGET_ID13 = 13;
+const uint8_t TARGET_ID14 = 14;
+const uint8_t TARGET_ID15 = 15;
+const uint8_t TARGET_ID16 = 16;
+const uint8_t TARGET_ID17 = 17;
+const uint8_t TARGET_ID18 = 18;
 
 
 #define RXD2 16
@@ -470,97 +491,133 @@ void Pgain_on() {
     dxl.positionPGain(TARGET_ID6, 500);
     dxl.positionPGain(TARGET_ID7, 500);
     dxl.positionPGain(TARGET_ID8, 1200);
+
+    dxl.positionPGain(TARGET_ID11, serialnumberP);
+    dxl.positionPGain(TARGET_ID12, serialnumberP);
+    dxl.positionPGain(TARGET_ID13, 700);
+    dxl.positionPGain(TARGET_ID14, serialnumberP);
+    dxl.positionPGain(TARGET_ID16, 500);
+    dxl.positionPGain(TARGET_ID17, 500);
+    dxl.positionPGain(TARGET_ID18, 1200);
   }
 }
 
-void range(int a1, int a2) {
+void rightArmRange(int a1, int a2) {
 
   int r = 230;
-  if (a1 < a2 + r && a2 - r < a1)z = z + 1;
+  if (a1 < a2 + r && a2 - r < a1)rightArmFlag = rightArmFlag + 1;
+}
+
+void leftArmRange(int a1, int a2) {
+
+  int r = 230;
+  if (a1 < a2 + r && a2 - r < a1)leftArmFlag = leftArmFlag + 1;
 }
 
 void zero() { //フリーの時、落下防止に動きを遅くするフラグをONにする
 
-  z = 1;
+  rightArmFlag = 1;
+  leftArmFlag = 1;
   int de = 1; delay(de);
   targetPos01 = dxl.presentPosition(TARGET_ID1); delay(de);
   targetPos02 = dxl.presentPosition(TARGET_ID2); delay(de);
   targetPos04 = dxl.presentPosition(TARGET_ID4); delay(de);
-  targetPos08 = dxl.presentPosition(TARGET_ID8);
+  targetPos08 = dxl.presentPosition(TARGET_ID8); delay(de);
+
+  targetPos11 = dxl.presentPosition(TARGET_ID11); delay(de);
+  targetPos12 = dxl.presentPosition(TARGET_ID12); delay(de);
+  targetPos14 = dxl.presentPosition(TARGET_ID14); delay(de);
+  targetPos18 = dxl.presentPosition(TARGET_ID18);
+
   s08 = targetPos08;
+  s018 = targetPos18;
 
-  range(targetPos01, ran1);
-  range(targetPos02, ran2);
-  range(targetPos04, ran4);
+  rightArmRange(targetPos01, ran1);
+  rightArmRange(targetPos02, ran2);
+  rightArmRange(targetPos04, ran4);
 
-  if (z == 4)z = 0;
-  Serial.print(z);
+  leftArmRange(targetPos11, ran11);
+  leftArmRange(targetPos12, ran12);
+  leftArmRange(targetPos14, ran14);
+
+  if (rightArmFlag == 4)rightArmFlag = 0;
+  Serial.print(" Rflag : ");
+  Serial.print(rightArmFlag);
+  Serial.print(":");
+  if (leftArmFlag == 4)leftArmFlag = 0;
+  Serial.print(" Lflag : ");
+  Serial.print(leftArmFlag);
   Serial.print(":");
 }
 
 void slow() { //条件がONの時、スローにする。ただし腕が全開の時は例外とする
 
-  if (onlyLeftArm == true) {
-    if (z > 0 && s08 < exception) {
-      dxl.positionPGain(TARGET_ID1, 1);
-      dxl.positionPGain(TARGET_ID2, 1);
-      dxl.positionPGain(TARGET_ID3, 1);
-      dxl.positionPGain(TARGET_ID4, 1);
-      dxl.positionPGain(TARGET_ID6, 1);
-      dxl.positionPGain(TARGET_ID7, 1);
-      dxl.positionPGain(TARGET_ID8, 1);
+  if (rightArmFlag > 0 && s08 > rightHandException) {
+    dxl.positionPGain(TARGET_ID1, 1);
+    dxl.positionPGain(TARGET_ID2, 1);
+    dxl.positionPGain(TARGET_ID3, 1);
+    dxl.positionPGain(TARGET_ID4, 1);
+    dxl.positionPGain(TARGET_ID6, 1);
+    dxl.positionPGain(TARGET_ID7, 1);
+    dxl.positionPGain(TARGET_ID8, 1);
 
-      int de = 1;
+    int de = 1;
 
-      dxl.torqueEnable(TARGET_ID1, false);
-      dxl.torqueEnable(TARGET_ID2, false);
-      dxl.torqueEnable(TARGET_ID4, false);
-      dxl.torqueEnable(TARGET_ID6, false);
-      delay(de);
-      dxl.torqueEnable(TARGET_ID1, true);
-      dxl.torqueEnable(TARGET_ID2, true);
-      dxl.torqueEnable(TARGET_ID4, true);
-      dxl.torqueEnable(TARGET_ID6, true);
-      delay(12);
+    dxl.torqueEnable(TARGET_ID1, false);
+    dxl.torqueEnable(TARGET_ID2, false);
+    dxl.torqueEnable(TARGET_ID3, false);
+    dxl.torqueEnable(TARGET_ID4, false);
+    dxl.torqueEnable(TARGET_ID6, false);
 
-    } else {
-      dxl.torqueEnable(TARGET_ID1, false);
-      dxl.torqueEnable(TARGET_ID2, false);
-      dxl.torqueEnable(TARGET_ID4, false);
-      dxl.torqueEnable(TARGET_ID6, false);
-    }
+    delay(de);
+    dxl.torqueEnable(TARGET_ID1, true);
+    dxl.torqueEnable(TARGET_ID2, true);
+    dxl.torqueEnable(TARGET_ID3, true);
+    dxl.torqueEnable(TARGET_ID4, true);
+    dxl.torqueEnable(TARGET_ID6, true);
+
+    delay(12);
+
   } else {
-    if (z > 0 && s08 > exception) {
-      dxl.positionPGain(TARGET_ID1, 1);
-      dxl.positionPGain(TARGET_ID2, 1);
-      dxl.positionPGain(TARGET_ID3, 1);
-      dxl.positionPGain(TARGET_ID4, 1);
-      dxl.positionPGain(TARGET_ID6, 1);
-      dxl.positionPGain(TARGET_ID7, 1);
-      dxl.positionPGain(TARGET_ID8, 1);
+    dxl.torqueEnable(TARGET_ID1, false);
+    dxl.torqueEnable(TARGET_ID2, false);
+    dxl.torqueEnable(TARGET_ID3, false);
+    dxl.torqueEnable(TARGET_ID4, false);
+    dxl.torqueEnable(TARGET_ID6, false);
+  }
 
-      int de = 1;
+  if (leftArmFlag > 0 && s018 < leftHandException) {
+    dxl.positionPGain(TARGET_ID11, 1);
+    dxl.positionPGain(TARGET_ID12, 1);
+    dxl.positionPGain(TARGET_ID13, 1);
+    dxl.positionPGain(TARGET_ID14, 1);
+    dxl.positionPGain(TARGET_ID16, 1);
+    dxl.positionPGain(TARGET_ID17, 1);
+    dxl.positionPGain(TARGET_ID18, 1);
 
-      dxl.torqueEnable(TARGET_ID1, false);
-      dxl.torqueEnable(TARGET_ID2, false);
-      dxl.torqueEnable(TARGET_ID3, false);
-      dxl.torqueEnable(TARGET_ID4, false);
-      dxl.torqueEnable(TARGET_ID6, false);
-      delay(de);
-      dxl.torqueEnable(TARGET_ID1, true);
-      dxl.torqueEnable(TARGET_ID2, true);
-      dxl.torqueEnable(TARGET_ID3, true);
-      dxl.torqueEnable(TARGET_ID4, true);
-      dxl.torqueEnable(TARGET_ID6, true);
-      delay(12);
+    int de = 1;
 
-    } else {
-      dxl.torqueEnable(TARGET_ID1, false);
-      dxl.torqueEnable(TARGET_ID2, false);
-      dxl.torqueEnable(TARGET_ID3, false);
-      dxl.torqueEnable(TARGET_ID4, false);
-      dxl.torqueEnable(TARGET_ID6, false);
-    }
+    dxl.torqueEnable(TARGET_ID11, false);
+    dxl.torqueEnable(TARGET_ID12, false);
+    dxl.torqueEnable(TARGET_ID13, false);
+    dxl.torqueEnable(TARGET_ID14, false);
+    dxl.torqueEnable(TARGET_ID16, false);
+    delay(de);
+
+    dxl.torqueEnable(TARGET_ID11, true);
+    dxl.torqueEnable(TARGET_ID12, true);
+    dxl.torqueEnable(TARGET_ID13, true);
+    dxl.torqueEnable(TARGET_ID14, true);
+    dxl.torqueEnable(TARGET_ID16, true);
+    delay(12);
+
+  } else {
+
+    dxl.torqueEnable(TARGET_ID11, false);
+    dxl.torqueEnable(TARGET_ID12, false);
+    dxl.torqueEnable(TARGET_ID13, false);
+    dxl.torqueEnable(TARGET_ID14, false);
+    dxl.torqueEnable(TARGET_ID16, false);
   }
 }
 
@@ -577,7 +634,16 @@ void demo() {
   targetPos05 = dxl.presentPosition(TARGET_ID5); delay(de);
   targetPos06 = dxl.presentPosition(TARGET_ID6); delay(de);
   targetPos07 = dxl.presentPosition(TARGET_ID7); delay(de);
-  targetPos08 = dxl.presentPosition(TARGET_ID8);
+  targetPos08 = dxl.presentPosition(TARGET_ID8); delay(de);
+
+  targetPos11 = dxl.presentPosition(TARGET_ID11); delay(de);
+  targetPos12 = dxl.presentPosition(TARGET_ID12); delay(de);
+  targetPos13 = dxl.presentPosition(TARGET_ID13); delay(de);
+  targetPos14 = dxl.presentPosition(TARGET_ID14); delay(de);
+  targetPos15 = dxl.presentPosition(TARGET_ID15); delay(de);
+  targetPos16 = dxl.presentPosition(TARGET_ID16); delay(de);
+  targetPos17 = dxl.presentPosition(TARGET_ID17); delay(de);
+  targetPos18 = dxl.presentPosition(TARGET_ID18);
 
   Serial.print(" demo = ");
   Serial.print(targetPos01); Serial.print(", ");
@@ -587,7 +653,16 @@ void demo() {
   Serial.print(targetPos05); Serial.print(", ");
   Serial.print(targetPos06); Serial.print(", ");
   Serial.print(targetPos07); Serial.print(", ");
-  Serial.println(targetPos08);
+  Serial.print(targetPos08); Serial.print(", ");
+
+  Serial.print(targetPos11); Serial.print(", ");
+  Serial.print(targetPos12); Serial.print(", ");
+  Serial.print(targetPos13); Serial.print(", ");
+  Serial.print(targetPos14); Serial.print(", ");
+  Serial.print(targetPos15); Serial.print(", ");
+  Serial.print(targetPos16); Serial.print(", ");
+  Serial.print(targetPos17); Serial.print(", ");
+  Serial.println(targetPos18);
 
   zero();
   slow();
@@ -660,6 +735,15 @@ void recordMotion() {
     dxl.torqueEnable(TARGET_ID7, false);
     dxl.torqueEnable(TARGET_ID8, false);
 
+    dxl.torqueEnable(TARGET_ID11, false);
+    dxl.torqueEnable(TARGET_ID12, false);
+    dxl.torqueEnable(TARGET_ID13, false);
+    dxl.torqueEnable(TARGET_ID14, false);
+    dxl.torqueEnable(TARGET_ID15, false);
+    dxl.torqueEnable(TARGET_ID16, false);
+    dxl.torqueEnable(TARGET_ID17, false);
+    dxl.torqueEnable(TARGET_ID18, false);
+
     for (int i = 0; i < defaultRecordNumber; i++) {
       // STOPボタンが押されたかどうかをチェック
       uint16_t t_x = 0, t_y = 0; // To store the touch coordinates
@@ -679,13 +763,13 @@ void recordMotion() {
 
       DISPwrite(String(i)+"/"+String(defaultRecordNumber));
       
-      UNDERDISPwrite(String(mode)+", "+String(targetPos01)+", "+String(targetPos02)+", "+String(targetPos03)+", "+String(targetPos04));
+      UNDERDISPwrite(String(mode)+", "+String(targetPos01)+", "+String(targetPos02)+", "+String(targetPos03)+", "+String(targetPos04)+", "+String(targetPos11)+", "+String(targetPos12)+", "+String(targetPos13)+", "+String(targetPos14));
 
       TIMERLENGTH = i;
       TIMERDISPwrite();
     
 
-      int de = 6; delay(de);
+      int de = 3; delay(de);
       targetPos01 = dxl.presentPosition(TARGET_ID1); delay(de);
       targetPos02 = dxl.presentPosition(TARGET_ID2); delay(de);
       targetPos03 = dxl.presentPosition(TARGET_ID3); delay(de);
@@ -693,7 +777,16 @@ void recordMotion() {
       targetPos05 = dxl.presentPosition(TARGET_ID5); delay(de);
       targetPos06 = dxl.presentPosition(TARGET_ID6); delay(de);
       targetPos07 = dxl.presentPosition(TARGET_ID7); delay(de);
-      targetPos08 = dxl.presentPosition(TARGET_ID8);
+      targetPos08 = dxl.presentPosition(TARGET_ID8); delay(de);
+      
+      targetPos11 = dxl.presentPosition(TARGET_ID11); delay(de);
+      targetPos12 = dxl.presentPosition(TARGET_ID12); delay(de);
+      targetPos13 = dxl.presentPosition(TARGET_ID13); delay(de);
+      targetPos14 = dxl.presentPosition(TARGET_ID14); delay(de);
+      targetPos15 = dxl.presentPosition(TARGET_ID15); delay(de);
+      targetPos16 = dxl.presentPosition(TARGET_ID16); delay(de);
+      targetPos17 = dxl.presentPosition(TARGET_ID17); delay(de);
+      targetPos18 = dxl.presentPosition(TARGET_ID18);
 
       //Serial.print("timer = ");  Serial.println(t);
 
@@ -708,7 +801,16 @@ void recordMotion() {
       Serial.print(targetPos05); Serial.print(", ");
       Serial.print(targetPos06); Serial.print(", ");
       Serial.print(targetPos07); Serial.print(", ");
-      Serial.print(targetPos08); Serial.print(", MODE=");  
+      Serial.print(targetPos08); Serial.print(", ");
+
+      Serial.print(targetPos11); Serial.print(", ");
+      Serial.print(targetPos12); Serial.print(", ");
+      Serial.print(targetPos13); Serial.print(", ");
+      Serial.print(targetPos14); Serial.print(", ");
+      Serial.print(targetPos15); Serial.print(", ");
+      Serial.print(targetPos16); Serial.print(", ");
+      Serial.print(targetPos17); Serial.print(", ");
+      Serial.print(targetPos18); Serial.print(", MODE=");  
       Serial.print(mode);
       Serial.print(", Audio="); Serial.print(swAudioState);
 
@@ -729,6 +831,23 @@ void recordMotion() {
       file.print(targetPos07);
       file.print(",");
       file.print(targetPos08);
+      file.print(",");
+
+      file.print(targetPos11);
+      file.print(",");
+      file.print(targetPos12);
+      file.print(",");
+      file.print(targetPos13);
+      file.print(",");
+      file.print(targetPos14);
+      file.print(",");
+      file.print(targetPos15);
+      file.print(",");
+      file.print(targetPos16);
+      file.print(",");
+      file.print(targetPos17);
+      file.print(",");
+      file.print(targetPos18);
       file.print(",");
       file.println(0);
 
@@ -817,8 +936,10 @@ void playMotion() {
   file.close();
 
   mode = 255;
-  Serial.print(z);
-  if (z == 0)mode = 256;
+  Serial.print(rightArmFlag);
+  Serial.print(leftArmFlag);
+  if (rightArmFlag == 0)mode = 256;
+  if (leftArmFlag == 0)mode = 256;
   if (mode == 255 )slow();
   if (mode == 256) {
 
@@ -830,6 +951,15 @@ void playMotion() {
     dxl.torqueEnable(TARGET_ID6, true);
     dxl.torqueEnable(TARGET_ID7, true);
     dxl.torqueEnable(TARGET_ID8, true);
+
+    dxl.torqueEnable(TARGET_ID11, true);
+    dxl.torqueEnable(TARGET_ID12, true);
+    dxl.torqueEnable(TARGET_ID13, true);
+    dxl.torqueEnable(TARGET_ID14, true);
+    dxl.torqueEnable(TARGET_ID15, true);
+    dxl.torqueEnable(TARGET_ID16, true);
+    dxl.torqueEnable(TARGET_ID17, true);
+    dxl.torqueEnable(TARGET_ID18, true);
 
     // シリアルモニタにデータを表示&モータ実行
     for (int i = 0; i < defaultRecordNumber; i++) {
@@ -857,20 +987,20 @@ void playMotion() {
       int ss7 = values[i * number + 6];
       int ss8 = values[i * number + 7];
 
-      //  delay(3);
-      // Serial.print(z);
+      int ss11 = values[i * number + 8];
+      int ss12 = values[i * number + 9];
+      int ss13 = values[i * number + 10];
+      int ss14 = values[i * number + 11];
+      int ss15 = values[i * number + 12];
+      int ss16 = values[i * number + 13];
+      int ss17 = values[i * number + 14];
+      int ss18 = values[i * number + 15];
+
+
       Serial.print("フレーム ");
       Serial.print(i + 1);
       Serial.println(": ");
-      // Serial.print("目標 = ");
-      // Serial.print(ss1); Serial.print(", ");
-      // Serial.print(ss2); Serial.print(", ");
-      // Serial.print(ss3); Serial.print(", ");
-      // Serial.print(ss4); Serial.print(", ");
-      // Serial.print(ss5); Serial.print(", ");
-      // Serial.print(ss6); Serial.print(", ");
-      // Serial.print(ss7); Serial.print(", ");
-      // Serial.print(ss8); Serial.print(" :");
+
       Serial.print("  mode= ");
       Serial.println(mode);
 
@@ -888,17 +1018,17 @@ void playMotion() {
       s5 = dxl.presentPosition(TARGET_ID5); delay(de);
       s6 = dxl.presentPosition(TARGET_ID6); delay(de);
       s7 = dxl.presentPosition(TARGET_ID7); delay(de);
-      s8 = dxl.presentPosition(TARGET_ID8);
+      s8 = dxl.presentPosition(TARGET_ID8); delay(de);
 
-      // Serial.print("実測 = ");
-      // Serial.print(s1); Serial.print(", ");
-      // Serial.print(s2); Serial.print(", ");
-      // Serial.print(s3); Serial.print(", ");
-      // Serial.print(s4); Serial.print(", ");
-      // Serial.print(s5); Serial.print(", ");
-      // Serial.print(s6); Serial.print(", ");
-      // Serial.print(s7); Serial.print(", ");
-      // Serial.println(s8);
+      s11 = dxl.presentPosition(TARGET_ID11); delay(de);
+      s12 = dxl.presentPosition(TARGET_ID12); delay(de);
+      s13 = dxl.presentPosition(TARGET_ID13); delay(de);
+      s14 = dxl.presentPosition(TARGET_ID14); delay(de);
+      s15 = dxl.presentPosition(TARGET_ID15); delay(de);
+      s16 = dxl.presentPosition(TARGET_ID16); delay(de);
+      s17 = dxl.presentPosition(TARGET_ID17); delay(de);
+      s18 = dxl.presentPosition(TARGET_ID18);
+
 
       Serial.print("差分 = ");
       Serial.print(ss1 - s1); Serial.print(", ");
@@ -908,12 +1038,25 @@ void playMotion() {
       Serial.print(ss5 - s5); Serial.print(", ");
       Serial.print(ss6 - s6); Serial.print(", ");
       Serial.print(ss7 - s7); Serial.print(", ");
-      Serial.println(ss8 - s8);
+      Serial.print(ss8 - s8); Serial.print(", ");
+
+      Serial.print(ss11 - s11); Serial.print(", ");
+      Serial.print(ss12 - s12); Serial.print(", ");
+      Serial.print(ss13 - s13); Serial.print(", ");
+      Serial.print(ss14 - s14); Serial.print(", ");
+      Serial.print(ss15 - s15); Serial.print(", ");
+      Serial.print(ss16 - s16); Serial.print(", ");
+      Serial.print(ss17 - s17); Serial.print(", ");
+      Serial.println(ss18 - s18);
 
 
-      range(s1, ran1);
-      range(s2, ran2);
-      range(s4, ran4);
+      rightArmRange(s1, ran1);
+      rightArmRange(s2, ran2);
+      rightArmRange(s4, ran4);
+
+      leftArmRange(s11, ran11);
+      leftArmRange(s12, ran12);
+      leftArmRange(s14, ran14);
 
       digitalWrite(pin1, HIGH);
 
@@ -926,6 +1069,15 @@ void playMotion() {
       dxl.goalPosition(TARGET_ID6, ss6);
       dxl.goalPosition(TARGET_ID7, ss7);
       dxl.goalPosition(TARGET_ID8, ss8 + 15);
+
+      dxl.goalPosition(TARGET_ID11, ss11);
+      dxl.goalPosition(TARGET_ID12, ss12);
+      dxl.goalPosition(TARGET_ID13, ss13);
+      dxl.goalPosition(TARGET_ID14, ss14);
+      dxl.goalPosition(TARGET_ID15, ss15);
+      dxl.goalPosition(TARGET_ID16, ss16);
+      dxl.goalPosition(TARGET_ID17, ss17);
+      dxl.goalPosition(TARGET_ID18, ss18 + 15);
 
       digitalWrite(pin1, LOW);
 
@@ -946,6 +1098,15 @@ void playMotion() {
     dxl.torqueEnable(TARGET_ID6, false);
     dxl.torqueEnable(TARGET_ID7, false);
     dxl.torqueEnable(TARGET_ID8, false);
+
+    //dxl.torqueEnable(TARGET_ID11, false);
+    //dxl.torqueEnable(TARGET_ID12, false);
+    dxl.torqueEnable(TARGET_ID13, false);
+    //dxl.torqueEnable(TARGET_ID14, false);
+    dxl.torqueEnable(TARGET_ID15, false);
+    dxl.torqueEnable(TARGET_ID16, false);
+    dxl.torqueEnable(TARGET_ID17, false);
+    dxl.torqueEnable(TARGET_ID18, false);
     mode = 0;
     zero();
     slow();
@@ -1168,6 +1329,15 @@ void setup() {
   dxl.addModel<DxlModel::X>(TARGET_ID7);
   dxl.addModel<DxlModel::X>(TARGET_ID8);
 
+  dxl.addModel<DxlModel::X>(TARGET_ID11);
+  dxl.addModel<DxlModel::X>(TARGET_ID12);
+  dxl.addModel<DxlModel::X>(TARGET_ID13);
+  dxl.addModel<DxlModel::X>(TARGET_ID14);
+  dxl.addModel<DxlModel::X>(TARGET_ID15);
+  dxl.addModel<DxlModel::X>(TARGET_ID16);
+  dxl.addModel<DxlModel::X>(TARGET_ID17);
+  dxl.addModel<DxlModel::X>(TARGET_ID18);
+
   dxl.torqueEnable(TARGET_ID1, false);
   dxl.torqueEnable(TARGET_ID2, false);
   dxl.torqueEnable(TARGET_ID3, false);
@@ -1177,6 +1347,15 @@ void setup() {
   dxl.torqueEnable(TARGET_ID7, false);
   dxl.torqueEnable(TARGET_ID8, false);
 
+  dxl.torqueEnable(TARGET_ID11, false);
+  dxl.torqueEnable(TARGET_ID12, false);
+  dxl.torqueEnable(TARGET_ID13, false);
+  dxl.torqueEnable(TARGET_ID14, false);
+  dxl.torqueEnable(TARGET_ID15, false);
+  dxl.torqueEnable(TARGET_ID16, false);
+  dxl.torqueEnable(TARGET_ID17, false);
+  dxl.torqueEnable(TARGET_ID18, false);
+
   Pgain_on();
 
   ran1 = dxl.presentPosition(TARGET_ID1); delay(5);
@@ -1184,11 +1363,22 @@ void setup() {
   ran3 - dxl.presentPosition(TARGET_ID3); delay(5);
   ran4 = dxl.presentPosition(TARGET_ID4); delay(5);
 
+  ran11 = dxl.presentPosition(TARGET_ID11); delay(5);
+  ran12 = dxl.presentPosition(TARGET_ID12); delay(5);
+  ran13 - dxl.presentPosition(TARGET_ID13); delay(5);
+  ran14 = dxl.presentPosition(TARGET_ID14); delay(5);
+
   Serial.print(ran1);
   Serial.print(",");
   Serial.print(ran2);
   Serial.print(",");
-  Serial.println(ran4);
+  Serial.print(ran4);
+
+  Serial.print(ran11);
+  Serial.print(",");
+  Serial.print(ran12);
+  Serial.print(",");
+  Serial.println(ran14);
 
   pinMode(pin1, OUTPUT);
   pinMode(pin2, OUTPUT);
