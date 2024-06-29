@@ -15,7 +15,7 @@ String numberBuffer1 = "test";
 BluetoothSerial SerialBT;
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.9.0"
+#define VERSION_NUMBER  "ver. 0.9.1"
 // -----------------------------------
 
 String bluetoothDeviceName = "YushunArm";
@@ -34,10 +34,15 @@ const int pin1 = 12;
 const int pin2 = 22;
 const int pin3 = 25;
 
-const int defaultRecordNumber = 200;  //デフォルトの録画する数
+const int defaultRecordNumber = 600;  //デフォルトの録画する数
 int number = 17; //←ここの数字はID+1とする 呼び出す数
-int values[defaultRecordNumber * 17 ]; //←ここの数字はID＋１とする
+int values[defaultRecordNumber * 18 ]; //←ここの数字はID＋１とする
 char buffer[24]; // 数値の一時的な保持のためのバッファ
+
+int startRecordTime = 0;
+int endRecordTime = 0;
+int totalRecordTime = 0;
+int playMotionTime = 200;
 
 
 const int timer = defaultRecordNumber;
@@ -744,20 +749,14 @@ void recordMotion() {
     dxl.torqueEnable(TARGET_ID17, false);
     dxl.torqueEnable(TARGET_ID18, false);
 
+    startRecordTime = millis();
+
     for (int i = 0; i < defaultRecordNumber; i++) {
       // STOPボタンが押されたかどうかをチェック
       uint16_t t_x = 0, t_y = 0; // To store the touch coordinates
       bool pressed = tft.getTouch(&t_x, &t_y);
       if (pressed && key[1].contains(t_x, t_y)) {
         stopRecording = true;
-      }
-      if (stopRecording) { // STOPボタンが押されたかどうかをチェック
-        for (int i = 3; i < 9; i++) {
-          keyColor[i] = TFT_RED; // 数字ボタンを赤色に変更
-        }
-        mode = 0;
-        drawKeypad();
-        break;
       }
 
 
@@ -794,67 +793,132 @@ void recordMotion() {
 
       Serial.print("レコード中 = ");
       Serial.print(i); Serial.print(" : ");
-      Serial.print(targetPos01); Serial.print(", ");
-      Serial.print(targetPos02); Serial.print(", ");
-      Serial.print(targetPos03); Serial.print(", ");
-      Serial.print(targetPos04); Serial.print(", ");
-      Serial.print(targetPos05); Serial.print(", ");
-      Serial.print(targetPos06); Serial.print(", ");
-      Serial.print(targetPos07); Serial.print(", ");
-      Serial.print(targetPos08); Serial.print(", ");
+      // Serial.print(targetPos01); Serial.print(", ");
+      // Serial.print(targetPos02); Serial.print(", ");
+      // Serial.print(targetPos03); Serial.print(", ");
+      // Serial.print(targetPos04); Serial.print(", ");
+      // Serial.print(targetPos05); Serial.print(", ");
+      // Serial.print(targetPos06); Serial.print(", ");
+      // Serial.print(targetPos07); Serial.print(", ");
+      // Serial.print(targetPos08); Serial.print(", ");
 
-      Serial.print(targetPos11); Serial.print(", ");
-      Serial.print(targetPos12); Serial.print(", ");
-      Serial.print(targetPos13); Serial.print(", ");
-      Serial.print(targetPos14); Serial.print(", ");
-      Serial.print(targetPos15); Serial.print(", ");
-      Serial.print(targetPos16); Serial.print(", ");
-      Serial.print(targetPos17); Serial.print(", ");
-      Serial.print(targetPos18); Serial.print(", MODE=");  
-      Serial.print(mode);
-      Serial.print(", Audio="); Serial.print(swAudioState);
+      // Serial.print(targetPos11); Serial.print(", ");
+      // Serial.print(targetPos12); Serial.print(", ");
+      // Serial.print(targetPos13); Serial.print(", ");
+      // Serial.print(targetPos14); Serial.print(", ");
+      // Serial.print(targetPos15); Serial.print(", ");
+      // Serial.print(targetPos16); Serial.print(", ");
+      // Serial.print(targetPos17); Serial.print(", ");
+      // Serial.print(targetPos18); Serial.print(", MODE=");  
+      // Serial.print(mode);
+      // Serial.print(", Audio="); Serial.print(swAudioState);
 
       //レコード書き出し
 
       file.print(targetPos01);
+      Serial.print(targetPos01);
       file.print(",");
+      Serial.print(",");
       file.print(targetPos02);
+      Serial.print(targetPos02);
       file.print(",");
+      Serial.print(",");
       file.print(targetPos03);
+      Serial.print(targetPos03);
       file.print(",");
+      Serial.print(",");
       file.print(targetPos04);
+      Serial.print(targetPos04);
       file.print(",");
+      Serial.print(",");
       file.print(targetPos05);
+      Serial.print(targetPos05);
       file.print(",");
+      Serial.print(",");
       file.print(targetPos06);
+      Serial.print(targetPos06);
       file.print(",");
+      Serial.print(",");
       file.print(targetPos07);
+      Serial.print(targetPos07);
       file.print(",");
+      Serial.print(",");
       file.print(targetPos08);
+      Serial.print(targetPos08);
       file.print(",");
+      Serial.print(",");
 
       file.print(targetPos11);
+      Serial.print(targetPos11);
       file.print(",");
+      Serial.print(",");
       file.print(targetPos12);
+      Serial.print(targetPos12);
       file.print(",");
+      Serial.print(",");
       file.print(targetPos13);
+      Serial.print(targetPos13);
       file.print(",");
+      Serial.print(",");
       file.print(targetPos14);
+      Serial.print(targetPos14);
       file.print(",");
+      Serial.print(",");
       file.print(targetPos15);
+      Serial.print(targetPos15);
       file.print(",");
+      Serial.print(",");
       file.print(targetPos16);
+      Serial.print(targetPos16);
       file.print(",");
+      Serial.print(",");
       file.print(targetPos17);
+      Serial.print(targetPos17);
       file.print(",");
+      Serial.print(",");
       file.print(targetPos18);
+      Serial.print(targetPos18);
       file.print(",");
-      file.println(0);
+      Serial.print(",");
+      // file.println(0);
+      // Serial.println(0);
+      if (stopRecording) { // STOPボタンが押されたかどうかをチェック
+        for (int i = 3; i < 9; i++) {
+          keyColor[i] = TFT_RED; // 数字ボタンを赤色に変更
+        }
+        endRecordTime = millis();
+        totalRecordTime = endRecordTime - startRecordTime;
+        
+        file.print(totalRecordTime);
+        Serial.print(totalRecordTime);
+        file.print(",");
+        Serial.print(",");
+        file.println(0);
+        Serial.println(0);
+        Serial.println("");
+        Serial.println("STOP");
+        mode = 0;
+        drawKeypad();
+        break;
+      } else {
+        if (i > defaultRecordNumber - 2) {
+          endRecordTime = millis();
+          totalRecordTime = endRecordTime - startRecordTime;
+          file.print(totalRecordTime);
+          Serial.print(totalRecordTime);
+          file.print(",");
+          Serial.print(",");
+        }
+        file.println(0);
+        Serial.println(0);
+      }
 
     }
 
     if (!stopRecording) { // STOPボタンが押されていない場合
       DISPwrite("COMPLETE");
+      Serial.println("COMPLETE");
+
     } else {
       DISPwrite("STOPPED");
       stopRecording = false;
@@ -935,6 +999,16 @@ void playMotion() {
   }
   file.close();
 
+  // 総記録時間を取得
+  totalRecordTime = values[index - 2]; // 追加: 総記録時間は配列の最後から2番目に格納されています
+
+  // playTimeを画面に表示
+  DISPwrite("Play Time: " + String(totalRecordTime) + " ms");
+  Serial.println("Play Time: " + String(totalRecordTime) + " ms");
+
+  playMotionTime = totalRecordTime / 164;
+
+
   mode = 255;
   Serial.print(rightArmFlag);
   Serial.print(leftArmFlag);
@@ -962,7 +1036,7 @@ void playMotion() {
     dxl.torqueEnable(TARGET_ID18, true);
 
     // シリアルモニタにデータを表示&モータ実行
-    for (int i = 0; i < defaultRecordNumber; i++) {
+    for (int i = 0; i < playMotionTime; i++) {
       // STOPボタンが押されたかどうかをチェック
       uint16_t t_x = 0, t_y = 0; // To store the touch coordinates
       bool pressed = tft.getTouch(&t_x, &t_y);
@@ -1004,7 +1078,7 @@ void playMotion() {
       Serial.print("  mode= ");
       Serial.println(mode);
 
-      DISPwrite(String(i)+"/"+String(defaultRecordNumber));
+      DISPwrite(String(i)+"/"+String(playMotionTime));
 
       TIMERLENGTH = i;
       TIMERDISPwrite();
