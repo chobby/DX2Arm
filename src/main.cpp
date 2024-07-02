@@ -15,7 +15,7 @@ String numberBuffer1 = "test";
 BluetoothSerial SerialBT;
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.9.1"
+#define VERSION_NUMBER  "ver. 0.10.0"
 // -----------------------------------
 
 String bluetoothDeviceName = "YushunArm";
@@ -83,7 +83,7 @@ const int O_t = 20;
 
 int past_mode = 0;
 
-int serialnumberP = 300;
+int serialnumberP = 700;
 int serialnumberI = 2;
 int serialnumberD = 1;
 
@@ -1412,6 +1412,27 @@ void setup() {
   dxl.addModel<DxlModel::X>(TARGET_ID17);
   dxl.addModel<DxlModel::X>(TARGET_ID18);
 
+  // dxl.torqueEnable(TARGET_ID1, true);
+  // dxl.torqueEnable(TARGET_ID2, true);
+  // dxl.torqueEnable(TARGET_ID3, true);
+  // dxl.torqueEnable(TARGET_ID4, true);
+  // dxl.torqueEnable(TARGET_ID5, true);
+  // dxl.torqueEnable(TARGET_ID6, true);
+  // dxl.torqueEnable(TARGET_ID7, true);
+  // dxl.torqueEnable(TARGET_ID8, true);
+
+  // dxl.torqueEnable(TARGET_ID11, true);
+  // dxl.torqueEnable(TARGET_ID12, true);
+  // dxl.torqueEnable(TARGET_ID13, true);
+  // dxl.torqueEnable(TARGET_ID14, true);
+  // dxl.torqueEnable(TARGET_ID15, true);
+  // dxl.torqueEnable(TARGET_ID16, true);
+  // dxl.torqueEnable(TARGET_ID17, true);
+  // dxl.torqueEnable(TARGET_ID18, true);
+
+  
+
+
   dxl.torqueEnable(TARGET_ID1, false);
   dxl.torqueEnable(TARGET_ID2, false);
   dxl.torqueEnable(TARGET_ID3, false);
@@ -1431,6 +1452,43 @@ void setup() {
   dxl.torqueEnable(TARGET_ID18, false);
 
   Pgain_on();
+
+  dxl.driveMode(TARGET_ID1, 0x04);
+  dxl.driveMode(TARGET_ID2, 0x04);
+  dxl.driveMode(TARGET_ID3, 0x04);
+  dxl.driveMode(TARGET_ID4, 0x04);
+  dxl.driveMode(TARGET_ID5, 0x04);
+  dxl.driveMode(TARGET_ID6, 0x04);
+  dxl.driveMode(TARGET_ID7, 0x04);
+  dxl.driveMode(TARGET_ID8, 0x04);
+  dxl.driveMode(TARGET_ID11, 0x04);
+  dxl.driveMode(TARGET_ID12, 0x04);
+  dxl.driveMode(TARGET_ID13, 0x04);
+  dxl.driveMode(TARGET_ID14, 0x04);
+  dxl.driveMode(TARGET_ID15, 0x04);
+  dxl.driveMode(TARGET_ID16, 0x04);
+  dxl.driveMode(TARGET_ID17, 0x04);
+  dxl.driveMode(TARGET_ID18, 0x04);
+
+
+
+  dxl.profileVelocity(TARGET_ID1, 150);
+  dxl.profileVelocity(TARGET_ID2, 150);
+  dxl.profileVelocity(TARGET_ID3, 150);
+  dxl.profileVelocity(TARGET_ID4, 150);
+  dxl.profileVelocity(TARGET_ID5, 150);
+  dxl.profileVelocity(TARGET_ID6, 150);
+  dxl.profileVelocity(TARGET_ID7, 150);
+  dxl.profileVelocity(TARGET_ID8, 150);
+  dxl.profileVelocity(TARGET_ID11, 150);
+  dxl.profileVelocity(TARGET_ID12, 150);
+  dxl.profileVelocity(TARGET_ID13, 150);
+  dxl.profileVelocity(TARGET_ID14, 150);
+  dxl.profileVelocity(TARGET_ID15, 150);
+  dxl.profileVelocity(TARGET_ID16, 150);
+  dxl.profileVelocity(TARGET_ID17, 150);
+  dxl.profileVelocity(TARGET_ID18, 150);
+
 
   ran1 = dxl.presentPosition(TARGET_ID1); delay(5);
   ran2 = dxl.presentPosition(TARGET_ID2); delay(5);
