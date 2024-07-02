@@ -15,7 +15,7 @@ String numberBuffer1 = "test";
 BluetoothSerial SerialBT;
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.10.1"
+#define VERSION_NUMBER  "ver. 0.10.2"
 // -----------------------------------
 
 String bluetoothDeviceName = "YushunArm";
@@ -634,6 +634,43 @@ void demo() {
   Serial.print(mode);
   int de = 5;
   delay(de);
+
+  dxl.driveMode(TARGET_ID1, 0x04);
+  dxl.driveMode(TARGET_ID2, 0x04);
+  dxl.driveMode(TARGET_ID3, 0x04);
+  dxl.driveMode(TARGET_ID4, 0x04);
+  dxl.driveMode(TARGET_ID5, 0x04);
+  dxl.driveMode(TARGET_ID6, 0x04);
+  dxl.driveMode(TARGET_ID7, 0x04);
+  dxl.driveMode(TARGET_ID8, 0x04);
+  dxl.driveMode(TARGET_ID11, 0x04);
+  dxl.driveMode(TARGET_ID12, 0x04);
+  dxl.driveMode(TARGET_ID13, 0x04);
+  dxl.driveMode(TARGET_ID14, 0x04);
+  dxl.driveMode(TARGET_ID15, 0x04);
+  dxl.driveMode(TARGET_ID16, 0x04);
+  dxl.driveMode(TARGET_ID17, 0x04);
+  dxl.driveMode(TARGET_ID18, 0x04);
+
+
+
+  dxl.profileVelocity(TARGET_ID1, profileVelocity);
+  dxl.profileVelocity(TARGET_ID2, profileVelocity);
+  dxl.profileVelocity(TARGET_ID3, profileVelocity);
+  dxl.profileVelocity(TARGET_ID4, profileVelocity);
+  dxl.profileVelocity(TARGET_ID5, profileVelocity);
+  dxl.profileVelocity(TARGET_ID6, profileVelocity);
+  dxl.profileVelocity(TARGET_ID7, profileVelocity);
+  dxl.profileVelocity(TARGET_ID8, profileVelocity);
+  dxl.profileVelocity(TARGET_ID11, profileVelocity);
+  dxl.profileVelocity(TARGET_ID12, profileVelocity);
+  dxl.profileVelocity(TARGET_ID13, profileVelocity);
+  dxl.profileVelocity(TARGET_ID14, profileVelocity);
+  dxl.profileVelocity(TARGET_ID15, profileVelocity);
+  dxl.profileVelocity(TARGET_ID16, profileVelocity);
+  dxl.profileVelocity(TARGET_ID17, profileVelocity);
+  dxl.profileVelocity(TARGET_ID18, profileVelocity);
+
   targetPos01 = dxl.presentPosition(TARGET_ID1); delay(de);
   targetPos02 = dxl.presentPosition(TARGET_ID2); delay(de);
   targetPos03 = dxl.presentPosition(TARGET_ID3); delay(de);
@@ -1434,41 +1471,41 @@ void setup() {
 
   Pgain_on();
 
-  dxl.driveMode(TARGET_ID1, 0x04);
-  dxl.driveMode(TARGET_ID2, 0x04);
-  dxl.driveMode(TARGET_ID3, 0x04);
-  dxl.driveMode(TARGET_ID4, 0x04);
-  dxl.driveMode(TARGET_ID5, 0x04);
-  dxl.driveMode(TARGET_ID6, 0x04);
-  dxl.driveMode(TARGET_ID7, 0x04);
-  dxl.driveMode(TARGET_ID8, 0x04);
-  dxl.driveMode(TARGET_ID11, 0x04);
-  dxl.driveMode(TARGET_ID12, 0x04);
-  dxl.driveMode(TARGET_ID13, 0x04);
-  dxl.driveMode(TARGET_ID14, 0x04);
-  dxl.driveMode(TARGET_ID15, 0x04);
-  dxl.driveMode(TARGET_ID16, 0x04);
-  dxl.driveMode(TARGET_ID17, 0x04);
-  dxl.driveMode(TARGET_ID18, 0x04);
+  // dxl.driveMode(TARGET_ID1, 0x04);
+  // dxl.driveMode(TARGET_ID2, 0x04);
+  // dxl.driveMode(TARGET_ID3, 0x04);
+  // dxl.driveMode(TARGET_ID4, 0x04);
+  // dxl.driveMode(TARGET_ID5, 0x04);
+  // dxl.driveMode(TARGET_ID6, 0x04);
+  // dxl.driveMode(TARGET_ID7, 0x04);
+  // dxl.driveMode(TARGET_ID8, 0x04);
+  // dxl.driveMode(TARGET_ID11, 0x04);
+  // dxl.driveMode(TARGET_ID12, 0x04);
+  // dxl.driveMode(TARGET_ID13, 0x04);
+  // dxl.driveMode(TARGET_ID14, 0x04);
+  // dxl.driveMode(TARGET_ID15, 0x04);
+  // dxl.driveMode(TARGET_ID16, 0x04);
+  // dxl.driveMode(TARGET_ID17, 0x04);
+  // dxl.driveMode(TARGET_ID18, 0x04);
 
 
 
-  dxl.profileVelocity(TARGET_ID1, profileVelocity);
-  dxl.profileVelocity(TARGET_ID2, profileVelocity);
-  dxl.profileVelocity(TARGET_ID3, profileVelocity);
-  dxl.profileVelocity(TARGET_ID4, profileVelocity);
-  dxl.profileVelocity(TARGET_ID5, profileVelocity);
-  dxl.profileVelocity(TARGET_ID6, profileVelocity);
-  dxl.profileVelocity(TARGET_ID7, profileVelocity);
-  dxl.profileVelocity(TARGET_ID8, profileVelocity);
-  dxl.profileVelocity(TARGET_ID11, profileVelocity);
-  dxl.profileVelocity(TARGET_ID12, profileVelocity);
-  dxl.profileVelocity(TARGET_ID13, profileVelocity);
-  dxl.profileVelocity(TARGET_ID14, profileVelocity);
-  dxl.profileVelocity(TARGET_ID15, profileVelocity);
-  dxl.profileVelocity(TARGET_ID16, profileVelocity);
-  dxl.profileVelocity(TARGET_ID17, profileVelocity);
-  dxl.profileVelocity(TARGET_ID18, profileVelocity);
+  // dxl.profileVelocity(TARGET_ID1, profileVelocity);
+  // dxl.profileVelocity(TARGET_ID2, profileVelocity);
+  // dxl.profileVelocity(TARGET_ID3, profileVelocity);
+  // dxl.profileVelocity(TARGET_ID4, profileVelocity);
+  // dxl.profileVelocity(TARGET_ID5, profileVelocity);
+  // dxl.profileVelocity(TARGET_ID6, profileVelocity);
+  // dxl.profileVelocity(TARGET_ID7, profileVelocity);
+  // dxl.profileVelocity(TARGET_ID8, profileVelocity);
+  // dxl.profileVelocity(TARGET_ID11, profileVelocity);
+  // dxl.profileVelocity(TARGET_ID12, profileVelocity);
+  // dxl.profileVelocity(TARGET_ID13, profileVelocity);
+  // dxl.profileVelocity(TARGET_ID14, profileVelocity);
+  // dxl.profileVelocity(TARGET_ID15, profileVelocity);
+  // dxl.profileVelocity(TARGET_ID16, profileVelocity);
+  // dxl.profileVelocity(TARGET_ID17, profileVelocity);
+  // dxl.profileVelocity(TARGET_ID18, profileVelocity);
 
 
   ran1 = dxl.presentPosition(TARGET_ID1); delay(5);
