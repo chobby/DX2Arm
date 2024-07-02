@@ -1,6 +1,7 @@
 //オーディオモード、残り時間のバーは出来てる
 //キーパッドの色エラー出るのでそのまま、秒数のコントロールも出来ていない…
 
+
 #include <Dynamixel.h>
 #define DYNAMIXEL_SERIAL Serial2 // change as you want
 
@@ -13,6 +14,85 @@
 String numberBuffer1 = "test";
 
 BluetoothSerial SerialBT;
+
+
+
+static const int Empty = 0;
+static const int Start = 1;
+static const int ArrowPressUp = 2;
+static const int ArrowPressDown = 3;
+static const int ArrowPressLeft = 4;
+static const int ArrowPressRight = 5;
+static const int ArrowPressCenter = 6;
+static const int ArrowOut = 7;
+static const int ButtonPressA = 8;
+static const int ButtonPressB = 9;
+static const int ButtonPressC = 10;
+static const int ButtonPressD = 11;
+static const int ButtonPressE = 12;
+static const int ButtonPressF = 13;
+static const int ButtonPressG = 14;
+static const int ButtonPressH = 15;
+static const int ButtonPressI = 16;
+static const int ButtonPressJ = 17;
+static const int ButtonPressK = 18;
+static const int ButtonPressL = 19;
+static const int ButtonPressM = 20;
+static const int ButtonPressN = 21;
+static const int ButtonPressO = 22;
+static const int ButtonPressP = 23;
+static const int ButtonPressQ = 24;
+static const int ButtonPressR = 25;
+static const int ButtonPressS = 26;
+static const int ButtonPressT = 27;
+static const int ButtonPressU = 28;
+static const int ButtonPressV = 29;
+static const int ButtonPressW = 30;
+static const int ButtonPressX = 31;
+static const int ButtonPressY = 32;
+static const int ButtonPressZ = 33;
+static const int ButtonOut = 34;
+struct Action {
+    int id;
+    String command;
+};
+Action ACTIONS[] = {
+    { Empty, "__" },
+    { Start, "START" },
+    { ArrowPressUp, "ARROW_PRESS_UP" },
+    { ArrowPressDown, "ARROW_PRESS_DOWN" },
+    { ArrowPressLeft, "ARROW_PRESS_LEFT" },
+    { ArrowPressRight, "ARROW_PRESS_RIGHT" },
+    { ArrowPressCenter, "ARROW_PRESS_CENTER" },
+    { ArrowOut, "ARROW_OUT" },
+    { ButtonPressA, "BUTTON_PRESS_A" },
+    { ButtonPressB, "BUTTON_PRESS_B" },
+    { ButtonPressC, "BUTTON_PRESS_C" },
+    { ButtonPressD, "BUTTON_PRESS_D" },
+    { ButtonPressE, "BUTTON_PRESS_E" },
+    { ButtonPressF, "BUTTON_PRESS_F" },
+    { ButtonPressG, "BUTTON_PRESS_G" },
+    { ButtonPressH, "BUTTON_PRESS_H" },
+    { ButtonPressI, "BUTTON_PRESS_I" },
+    { ButtonPressJ, "BUTTON_PRESS_J" },
+    { ButtonPressK, "BUTTON_PRESS_K" },
+    { ButtonPressL, "BUTTON_PRESS_L" },
+    { ButtonPressM, "BUTTON_PRESS_M" },
+    { ButtonPressN, "BUTTON_PRESS_N" },
+    { ButtonPressO, "BUTTON_PRESS_O" },
+    { ButtonPressP, "BUTTON_PRESS_P" },
+    { ButtonPressQ, "BUTTON_PRESS_Q" },
+    { ButtonPressR, "BUTTON_PRESS_R" },
+    { ButtonPressS, "BUTTON_PRESS_S" },
+    { ButtonPressT, "BUTTON_PRESS_T" },
+    { ButtonPressU, "BUTTON_PRESS_U" },
+    { ButtonPressV, "BUTTON_PRESS_V" },
+    { ButtonPressW, "BUTTON_PRESS_W" },
+    { ButtonPressX, "BUTTON_PRESS_X" },
+    { ButtonPressY, "BUTTON_PRESS_Y" },
+    { ButtonPressZ, "BUTTON_PRESS_Z" },
+    { ButtonOut, "BUTTON_OUT" },
+};
 
 // ---- S/W Version ------------------
 #define VERSION_NUMBER  "ver. 0.10.2"
@@ -176,6 +256,29 @@ uint8_t numberIndex = 0;
 // We have a status line for messages
 #define STATUS_X 120 // Centred on this
 #define STATUS_Y 65
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Create 9 keys for the keypad
 char keyLabel[9][5] = {"RUN", "MODE", "REC", "1", "2", "3", "4", "5", "6"};
@@ -1427,9 +1530,11 @@ void armloop() {
 
 void setup() {
 
+  // Serial.begin(115200);
+  Serial.begin(19200);
+  Serial1.begin(115200);
   DYNAMIXEL_SERIAL.begin(1000000);
   dxl.attach(DYNAMIXEL_SERIAL, 1000000);
-  Serial.begin(115200);
   SerialBT.begin(bluetoothDeviceName); // Bluetooth device name
   Serial.println("The device started, now you can pair it with bluetooth!");
 
@@ -1571,6 +1676,16 @@ void setup() {
   Serial.println("setup done");
 }
 
+Action checkAction(String command) {
+    command.trim();
+    for (int i = 0; i < sizeof(ACTIONS); i += 1) {
+        if (command == ACTIONS[i].command) {
+        return ACTIONS[i];
+        }
+    }
+    return ACTIONS[0];
+}
+
 
 void loop(void) {
 
@@ -1581,6 +1696,87 @@ void loop(void) {
     digitalWrite(pin2, HIGH);
     mainloop = false;
   }
+
+  if (Serial.available()) {
+        String command = Serial.readStringUntil('\n');
+        Action action = checkAction(command);
+        if (action.id == 0) return;
+
+
+        if (action.id == ArrowPressUp) {
+          Serial.println("UP");
+          Serial1.write("UP");
+        }
+
+
+        if (action.id == ArrowPressDown) {
+          Serial.println("DOWN");
+          Serial1.write("DOWN");
+        }
+
+
+        if (action.id == ArrowPressRight) {
+          Serial.println("RIGHT");
+          Serial1.write("RIGHT");
+        }
+
+
+        if (action.id == ArrowPressLeft) {
+          Serial.println("LEFT");
+          Serial1.write("LEFT");
+        }
+
+
+        if (action.id == ArrowOut) {
+          Serial.println("stop");
+          Serial1.write("stop");
+        }
+
+
+        if (action.id == ArrowPressCenter) {
+        }
+
+
+
+        if (action.id == ButtonPressA) { //
+            // Serial.println("A-button");
+            mode = 11;
+            playMotion();
+        }
+
+
+        if (action.id == ButtonPressB) { //
+          // Serial.println("B-button");
+          mode = 12;
+          playMotion();
+        }
+
+
+        if (action.id == ButtonPressC) { //
+          // Serial.println("C-button");
+          mode = 13;
+          playMotion();
+        }
+
+
+        if (action.id == ButtonPressD) { //
+          // Serial.println("D-button");
+          mode = 14;
+          playMotion();
+        }
+
+        if (action.id == ButtonPressE) { //
+          // Serial.println("E-button");
+          mode = 15;
+          playMotion();
+        }
+
+
+
+
+        if (action.id == ButtonOut) {
+        }
+    }
 
   uint16_t t_x = 0, t_y = 0; // To store the touch coordinates
 
