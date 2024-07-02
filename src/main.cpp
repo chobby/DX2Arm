@@ -95,7 +95,7 @@ Action ACTIONS[] = {
 };
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.10.2"
+#define VERSION_NUMBER  "ver. 0.11.0"
 // -----------------------------------
 
 String bluetoothDeviceName = "YushunArm";
