@@ -95,7 +95,7 @@ Action ACTIONS[] = {
 };
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.11.0"
+#define VERSION_NUMBER  "ver. 0.11.1"
 // -----------------------------------
 
 String bluetoothDeviceName = "YushunArm";
@@ -108,11 +108,22 @@ bool stopPlaying = false; //STOPボタンが押されたかどうか
 int rightHandException = 2400;   //手が全開で脱力する時の閾値
 int leftHandException = 800;   //手が全開で脱力する時の閾値
 
+
+#define RXD2 16
+#define TXD2 17
+
+const int rs485TX = 22;  //485--白
+const int rs485RX = 12;  //485--黄
+
+const int swAudio = 21;
+
 const uint8_t PIN_RTS = 11;
 
-const int pin1 = 12;
-const int pin2 = 22;
-const int pin3 = 25;
+const int pin1 = 25;
+const int pin2 = 26;
+const int pin3 = 27;
+
+Dynamixel dxl(RXD2, TXD2);
 
 const int defaultRecordNumber = 600;  //デフォルトの録画する数
 int number = 17; //←ここの数字はID+1とする 呼び出す数
@@ -158,6 +169,8 @@ int s018 = 0; //腕の角度
 int mode = 10; //1-9:モーション登録, 11-19:モーション再生
 int audioMode = 0; //0:初期値,
 
+int moveMode = 0; //0:初期値, 1:前進, 2:後進, 3:右回転, 4:左回転
+
 int O_time = 0;
 const int O_t = 20;
 
@@ -196,12 +209,9 @@ const uint8_t TARGET_ID17 = 17;
 const uint8_t TARGET_ID18 = 18;
 
 
-#define RXD2 16
-#define TXD2 17
 
-const int swAudio = 21;
 
-Dynamixel dxl(RXD2, TXD2);
+
 int dxl_goal_position1[2];
 int dxl_goal_position2[2];
 bool dir = true;
@@ -651,13 +661,13 @@ void zero() { //フリーの時、落下防止に動きを遅くするフラグ�
   leftArmRange(targetPos14, ran14);
 
   if (rightArmFlag == 4)rightArmFlag = 0;
-  Serial.print(" Rflag : ");
-  Serial.print(rightArmFlag);
-  Serial.print(":");
+  // Serial.print(" Rflag : ");
+  // Serial.print(rightArmFlag);
+  // Serial.print(":");
   if (leftArmFlag == 4)leftArmFlag = 0;
-  Serial.print(" Lflag : ");
-  Serial.print(leftArmFlag);
-  Serial.print(":");
+  // Serial.print(" Lflag : ");
+  // Serial.print(leftArmFlag);
+  // Serial.print(":");
 }
 
 void slow() { //条件がONの時、スローにする。ただし腕が全開の時は例外とする
@@ -733,8 +743,8 @@ void slow() { //条件がONの時、スローにする。ただし腕が全開�
 
 void demo() {
 
-  Serial.print("mode= ");//デモの時は基本10になっている。
-  Serial.print(mode);
+  // Serial.print("mode= ");//デモの時は基本10になっている。
+  // Serial.print(mode);
   int de = 5;
   delay(de);
 
@@ -792,7 +802,7 @@ void demo() {
   targetPos17 = dxl.presentPosition(TARGET_ID17); delay(de);
   targetPos18 = dxl.presentPosition(TARGET_ID18);
 
-  Serial.print(" demo = ");
+  // Serial.print(" demo = ");
   Serial.print(targetPos01); Serial.print(", ");
   Serial.print(targetPos02); Serial.print(", ");
   Serial.print(targetPos03); Serial.print(", ");
@@ -810,9 +820,6 @@ void demo() {
   Serial.print(targetPos16); Serial.print(", ");
   Serial.print(targetPos17); Serial.print(", ");
   Serial.println(targetPos18);
-
-  zero();
-  slow();
 }
 
 
@@ -1429,7 +1436,42 @@ void armloop() {
   } else { 
     Pgain_on();
     delay(10);
-    demo();//デモを再生せよ
+    // demo();//デモを再生せよ
+    dxl.driveMode(TARGET_ID1, 0x04);
+    dxl.driveMode(TARGET_ID2, 0x04);
+    dxl.driveMode(TARGET_ID3, 0x04);
+    dxl.driveMode(TARGET_ID4, 0x04);
+    dxl.driveMode(TARGET_ID5, 0x04);
+    dxl.driveMode(TARGET_ID6, 0x04);
+    dxl.driveMode(TARGET_ID7, 0x04);
+    dxl.driveMode(TARGET_ID8, 0x04);
+    dxl.driveMode(TARGET_ID11, 0x04);
+    dxl.driveMode(TARGET_ID12, 0x04);
+    dxl.driveMode(TARGET_ID13, 0x04);
+    dxl.driveMode(TARGET_ID14, 0x04);
+    dxl.driveMode(TARGET_ID15, 0x04);
+    dxl.driveMode(TARGET_ID16, 0x04);
+    dxl.driveMode(TARGET_ID17, 0x04);
+    dxl.driveMode(TARGET_ID18, 0x04);
+
+
+
+    dxl.profileVelocity(TARGET_ID1, profileVelocity);
+    dxl.profileVelocity(TARGET_ID2, profileVelocity);
+    dxl.profileVelocity(TARGET_ID3, profileVelocity);
+    dxl.profileVelocity(TARGET_ID4, profileVelocity);
+    dxl.profileVelocity(TARGET_ID5, profileVelocity);
+    dxl.profileVelocity(TARGET_ID6, profileVelocity);
+    dxl.profileVelocity(TARGET_ID7, profileVelocity);
+    dxl.profileVelocity(TARGET_ID8, profileVelocity);
+    dxl.profileVelocity(TARGET_ID11, profileVelocity);
+    dxl.profileVelocity(TARGET_ID12, profileVelocity);
+    dxl.profileVelocity(TARGET_ID13, profileVelocity);
+    dxl.profileVelocity(TARGET_ID14, profileVelocity);
+    dxl.profileVelocity(TARGET_ID15, profileVelocity);
+    dxl.profileVelocity(TARGET_ID16, profileVelocity);
+    dxl.profileVelocity(TARGET_ID17, profileVelocity);
+    dxl.profileVelocity(TARGET_ID18, profileVelocity);
     delay(10);
 
     if (swAudioState == 0) {
@@ -1532,7 +1574,8 @@ void setup() {
 
   // Serial.begin(115200);
   Serial.begin(19200);
-  Serial1.begin(115200);
+  Serial1.begin(115200, SERIAL_8N1, rs485TX, rs485RX);
+  Serial1.flush(); // 受信バッファをクリア
   DYNAMIXEL_SERIAL.begin(1000000);
   dxl.attach(DYNAMIXEL_SERIAL, 1000000);
   SerialBT.begin(bluetoothDeviceName); // Bluetooth device name
@@ -1575,42 +1618,6 @@ void setup() {
   dxl.torqueEnable(TARGET_ID18, false);
 
   Pgain_on();
-
-  // dxl.driveMode(TARGET_ID1, 0x04);
-  // dxl.driveMode(TARGET_ID2, 0x04);
-  // dxl.driveMode(TARGET_ID3, 0x04);
-  // dxl.driveMode(TARGET_ID4, 0x04);
-  // dxl.driveMode(TARGET_ID5, 0x04);
-  // dxl.driveMode(TARGET_ID6, 0x04);
-  // dxl.driveMode(TARGET_ID7, 0x04);
-  // dxl.driveMode(TARGET_ID8, 0x04);
-  // dxl.driveMode(TARGET_ID11, 0x04);
-  // dxl.driveMode(TARGET_ID12, 0x04);
-  // dxl.driveMode(TARGET_ID13, 0x04);
-  // dxl.driveMode(TARGET_ID14, 0x04);
-  // dxl.driveMode(TARGET_ID15, 0x04);
-  // dxl.driveMode(TARGET_ID16, 0x04);
-  // dxl.driveMode(TARGET_ID17, 0x04);
-  // dxl.driveMode(TARGET_ID18, 0x04);
-
-
-
-  // dxl.profileVelocity(TARGET_ID1, profileVelocity);
-  // dxl.profileVelocity(TARGET_ID2, profileVelocity);
-  // dxl.profileVelocity(TARGET_ID3, profileVelocity);
-  // dxl.profileVelocity(TARGET_ID4, profileVelocity);
-  // dxl.profileVelocity(TARGET_ID5, profileVelocity);
-  // dxl.profileVelocity(TARGET_ID6, profileVelocity);
-  // dxl.profileVelocity(TARGET_ID7, profileVelocity);
-  // dxl.profileVelocity(TARGET_ID8, profileVelocity);
-  // dxl.profileVelocity(TARGET_ID11, profileVelocity);
-  // dxl.profileVelocity(TARGET_ID12, profileVelocity);
-  // dxl.profileVelocity(TARGET_ID13, profileVelocity);
-  // dxl.profileVelocity(TARGET_ID14, profileVelocity);
-  // dxl.profileVelocity(TARGET_ID15, profileVelocity);
-  // dxl.profileVelocity(TARGET_ID16, profileVelocity);
-  // dxl.profileVelocity(TARGET_ID17, profileVelocity);
-  // dxl.profileVelocity(TARGET_ID18, profileVelocity);
 
 
   ran1 = dxl.presentPosition(TARGET_ID1); delay(5);
@@ -1672,6 +1679,9 @@ void setup() {
 	// timerAlarmWrite(timer, 33333, true);  //毎秒30回ポジションを保存する
 	// timerAlarmEnable(timer);
 
+  Serial1.println("ON_LED");
+  Serial1.println("Green_LED");
+
   pinMode(swAudio, INPUT_PULLUP);
   Serial.println("setup done");
 }
@@ -1697,86 +1707,98 @@ void loop(void) {
     mainloop = false;
   }
 
+
   if (Serial.available()) {
-        String command = Serial.readStringUntil('\n');
-        Action action = checkAction(command);
-        if (action.id == 0) return;
+    String command = Serial.readStringUntil('\n');
+    Action action = checkAction(command);
+    if (action.id == 0) return;
 
 
-        if (action.id == ArrowPressUp) {
-          Serial.println("UP");
-          Serial1.write("UP");
-        }
-
-
-        if (action.id == ArrowPressDown) {
-          Serial.println("DOWN");
-          Serial1.write("DOWN");
-        }
-
-
-        if (action.id == ArrowPressRight) {
-          Serial.println("RIGHT");
-          Serial1.write("RIGHT");
-        }
-
-
-        if (action.id == ArrowPressLeft) {
-          Serial.println("LEFT");
-          Serial1.write("LEFT");
-        }
-
-
-        if (action.id == ArrowOut) {
-          Serial.println("stop");
-          Serial1.write("stop");
-        }
-
-
-        if (action.id == ArrowPressCenter) {
-        }
-
-
-
-        if (action.id == ButtonPressA) { //
-            // Serial.println("A-button");
-            mode = 11;
-            playMotion();
-        }
-
-
-        if (action.id == ButtonPressB) { //
-          // Serial.println("B-button");
-          mode = 12;
-          playMotion();
-        }
-
-
-        if (action.id == ButtonPressC) { //
-          // Serial.println("C-button");
-          mode = 13;
-          playMotion();
-        }
-
-
-        if (action.id == ButtonPressD) { //
-          // Serial.println("D-button");
-          mode = 14;
-          playMotion();
-        }
-
-        if (action.id == ButtonPressE) { //
-          // Serial.println("E-button");
-          mode = 15;
-          playMotion();
-        }
-
-
-
-
-        if (action.id == ButtonOut) {
-        }
+    if (action.id == ArrowPressUp) {
+      // moveMode = 1;
+      Serial1.println("L_UP,100,100");
+      Serial.println("UP");
     }
+
+
+    if (action.id == ArrowPressDown) {
+      // moveMode = 2;
+      Serial1.println("L_DOWN,100");
+      Serial.println("DOWN");
+    }
+
+
+    if (action.id == ArrowPressRight) {
+      // moveMode = 3;
+      Serial1.println("L_RIGHT,45");
+      Serial.println("RIGHT");
+    }
+
+
+    if (action.id == ArrowPressLeft) {
+      // moveMode = 4;
+      Serial1.println("L_LEFT,45");
+      Serial.println("LEFT");
+    }
+
+
+    if (action.id == ArrowOut) {
+      moveMode = 0;
+      Serial.println("stop");
+      Serial1.println("stop");
+    }
+
+
+    if (action.id == ArrowPressCenter) {
+      moveMode = 0;
+      Serial.println("stop");
+      Serial1.println("stop");
+    }
+
+
+
+    if (action.id == ButtonPressA) { //
+        // Serial.println("A-button");
+        mode = 11;
+        playMotion();
+    }
+
+
+    if (action.id == ButtonPressB) { //
+      // Serial.println("B-button");
+      mode = 12;
+      playMotion();
+    }
+
+
+    if (action.id == ButtonPressC) { //
+      // Serial.println("C-button");
+      mode = 13;
+      playMotion();
+    }
+
+
+    if (action.id == ButtonPressD) { //
+      // Serial.println("D-button");
+      mode = 14;
+      playMotion();
+    }
+
+    if (action.id == ButtonPressE) { //
+      // Serial.println("E-button");
+      mode = 15;
+      playMotion();
+    }
+
+
+
+
+    if (action.id == ButtonOut) {
+    }
+  }
+
+
+
 
   uint16_t t_x = 0, t_y = 0; // To store the touch coordinates
 
@@ -1851,19 +1873,21 @@ void loop(void) {
     //DISPprint();
   }
   armloop();
+  zero();
+  slow();
 
   int swAudioState = digitalRead(swAudio);
   if (swAudioState == 0) {  // Assuming the switch pulls the pin LOW when pressed
-    Serial.print("Audio Switch ON  ");
+    // Serial.print("Audio Switch ON  ");
   } else {
-    Serial.print("Audio Switch OFF  ");
+    // Serial.print("Audio Switch OFF  ");
   }
   if (swAudioState == 0) {
     audioMode = 1;
   }
-  Serial.print(" audioMode= ");
-  Serial.print(audioMode);
-  Serial.print(" swAudioState= ");
-  Serial.print(swAudioState);
+  // Serial.print(" audioMode= ");
+  // Serial.print(audioMode);
+  // Serial.print(" swAudioState= ");
+  // Serial.print(swAudioState);
 
 }
