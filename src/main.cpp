@@ -95,7 +95,7 @@ Action ACTIONS[] = {
 };
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.11.1"
+#define VERSION_NUMBER  "ver. 0.11.2"
 // -----------------------------------
 
 String bluetoothDeviceName = "YushunArm";
@@ -1788,6 +1788,66 @@ void loop(void) {
       // Serial.println("E-button");
       mode = 15;
       playMotion();
+    }
+    
+    if (action.id == ButtonPressF) { //
+      // Serial.println("F-button");
+      Serial1.println("ON_LED");
+      Serial.println("ON_LED");
+    }
+
+    if (action.id == ButtonPressG) { //
+      // Serial.println("G-button");
+      Serial1.println("OFF_LED");
+      Serial.println("OFF_LED");
+    }
+
+    if (action.id == ButtonPressH) { //
+      // Serial.println("H-button");
+      Serial1.println("Red_LED");
+      Serial.println("Red_LED");
+    }
+
+    if (action.id == ButtonPressI) { //
+      // Serial.println("I-button");
+      Serial1.println("Green_LED");
+      Serial.println("Green_LED");
+    }
+
+    if (action.id == ButtonPressJ) { //
+      // Serial.println("J-button");
+      Serial1.println("Blue_LED");
+      Serial.println("Blue_LED");
+    }
+
+    if (action.id == ButtonPressK) { //
+      // Serial.println("K-button");
+      Serial1.println("Cyan_LED");
+      Serial.println("Cyan_LED");
+    }
+
+    if (action.id == ButtonPressL) { //
+      // Serial.println("L-button");
+      Serial1.println("Yellow_LED");
+      Serial.println("Yellow_LED");
+    }
+
+    if (action.id == ButtonPressM) { //
+      // Serial.println("M-button");
+      Serial1.println("Purple_LED");
+      Serial.println("Purple_LED");
+    }
+
+    if (action.id == ButtonPressN) { //
+      // Serial.println("N-button");
+      Serial1.println("Pink_LED");
+      Serial.println("Pink_LED");
+    }
+    
+    if (action.id == ButtonPressO) { //
+      // Serial.println("O-button");
+      Serial1.println("Orange_LED");
+      Serial.println("Orange_LED");
     }
 
 
