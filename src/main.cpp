@@ -95,7 +95,7 @@ Action ACTIONS[] = {
 };
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.11.2"
+#define VERSION_NUMBER  "ver. 0.12.0"
 // -----------------------------------
 
 String bluetoothDeviceName = "YushunArm";
@@ -266,28 +266,6 @@ uint8_t numberIndex = 0;
 // We have a status line for messages
 #define STATUS_X 120 // Centred on this
 #define STATUS_Y 65
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 // Create 9 keys for the keypad
@@ -1715,44 +1693,32 @@ void loop(void) {
 
 
     if (action.id == ArrowPressUp) {
-      // moveMode = 1;
-      Serial1.println("L_UP,100,100");
-      Serial.println("UP");
+
     }
 
 
     if (action.id == ArrowPressDown) {
-      // moveMode = 2;
-      Serial1.println("L_DOWN,100");
-      Serial.println("DOWN");
+      
     }
 
 
     if (action.id == ArrowPressRight) {
-      // moveMode = 3;
-      Serial1.println("L_RIGHT,45");
-      Serial.println("RIGHT");
+      
     }
 
 
     if (action.id == ArrowPressLeft) {
-      // moveMode = 4;
-      Serial1.println("L_LEFT,45");
-      Serial.println("LEFT");
+      
     }
 
 
     if (action.id == ArrowOut) {
-      moveMode = 0;
-      Serial.println("stop");
-      Serial1.println("stop");
+      
     }
 
 
     if (action.id == ArrowPressCenter) {
-      moveMode = 0;
-      Serial.println("stop");
-      Serial1.println("stop");
+      
     }
 
 
@@ -1789,68 +1755,6 @@ void loop(void) {
       mode = 15;
       playMotion();
     }
-    
-    if (action.id == ButtonPressF) { //
-      // Serial.println("F-button");
-      Serial1.println("ON_LED");
-      Serial.println("ON_LED");
-    }
-
-    if (action.id == ButtonPressG) { //
-      // Serial.println("G-button");
-      Serial1.println("OFF_LED");
-      Serial.println("OFF_LED");
-    }
-
-    if (action.id == ButtonPressH) { //
-      // Serial.println("H-button");
-      Serial1.println("Red_LED");
-      Serial.println("Red_LED");
-    }
-
-    if (action.id == ButtonPressI) { //
-      // Serial.println("I-button");
-      Serial1.println("Green_LED");
-      Serial.println("Green_LED");
-    }
-
-    if (action.id == ButtonPressJ) { //
-      // Serial.println("J-button");
-      Serial1.println("Blue_LED");
-      Serial.println("Blue_LED");
-    }
-
-    if (action.id == ButtonPressK) { //
-      // Serial.println("K-button");
-      Serial1.println("Cyan_LED");
-      Serial.println("Cyan_LED");
-    }
-
-    if (action.id == ButtonPressL) { //
-      // Serial.println("L-button");
-      Serial1.println("Yellow_LED");
-      Serial.println("Yellow_LED");
-    }
-
-    if (action.id == ButtonPressM) { //
-      // Serial.println("M-button");
-      Serial1.println("Purple_LED");
-      Serial.println("Purple_LED");
-    }
-
-    if (action.id == ButtonPressN) { //
-      // Serial.println("N-button");
-      Serial1.println("Pink_LED");
-      Serial.println("Pink_LED");
-    }
-    
-    if (action.id == ButtonPressO) { //
-      // Serial.println("O-button");
-      Serial1.println("Orange_LED");
-      Serial.println("Orange_LED");
-    }
-
-
 
 
     if (action.id == ButtonOut) {
