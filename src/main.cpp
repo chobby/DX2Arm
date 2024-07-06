@@ -95,7 +95,7 @@ Action ACTIONS[] = {
 };
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.12.0"
+#define VERSION_NUMBER  "ver. 0.13.0"
 // -----------------------------------
 
 String bluetoothDeviceName = "YushunArm";
@@ -139,15 +139,32 @@ int playMotionTime = 200;
 const int timer = defaultRecordNumber;
 int TIMERLENGTH = 0;
 
+const int pressButtonCount = 3;
+
+int horizontalLevel = 0;  //0:真ん中, 1:左Level.1, 2:左Level.2, 3:左Level.3, -1:右Level.1, -2:右Level.2, -3:右Level.3
+int verticalLevel = 0;  //0:真ん中, 1:上Level.1, 2:上Level.2, 3:上Level.3, -1:下Level.1, -2:下Level.2, -3:下Level.3
+
+int currentHorizontalPos = 0;
+int currentVerticalPos = 0;
+
+const int verticalHomePos = 2000; //中央
+const int verticalMaxPos = 2600; //下
+const int verticalMinPos = 1700; //上
+const int horizontalHomePos = 2000; //中央
+const int horizontalMaxPos = 2500; //左
+const int horizontalMinPos = 1500; //右
+
 
 int sw00State = 1, sw02State = 1, sw03State = 1, sw04State = 1, sw05State = 1, swAudioState = 1;
 int sw01State = 1;
 int targetPos01, targetPos02, targetPos03, targetPos04, targetPos05, targetPos06, targetPos07, targetPos08 = 0;
 int targetPos11, targetPos12, targetPos13, targetPos14, targetPos15, targetPos16, targetPos17, targetPos18 = 0;
+int targetPos21, targetPos22, targetPos23, targetPos24 = 0;
 
 
 int s1, s2, s3, s4, s5, s6, s7, s8 = 0;
 int s11, s12, s13, s14, s15, s16, s17, s18 = 0;
+int s21, s22, s23, s24 = 0;
 char receivedChar = 0;
 
 const int s1diference = 500; //id:01モータの目標値と実測値の差分 この差分を超えるとモーションを終了する
@@ -181,6 +198,7 @@ int serialnumberI = 2;
 int serialnumberD = 1;
 
 const int profileVelocity = 150;
+int headProfileVelocity = 300;
 
 File file;
 
@@ -207,6 +225,11 @@ const uint8_t TARGET_ID15 = 15;
 const uint8_t TARGET_ID16 = 16;
 const uint8_t TARGET_ID17 = 17;
 const uint8_t TARGET_ID18 = 18;
+
+const uint8_t TARGET_ID21 = 21;
+const uint8_t TARGET_ID22 = 22;
+const uint8_t TARGET_ID23 = 23;
+const uint8_t TARGET_ID24 = 24;
 
 
 
@@ -726,42 +749,6 @@ void demo() {
   int de = 5;
   delay(de);
 
-  dxl.driveMode(TARGET_ID1, 0x04);
-  dxl.driveMode(TARGET_ID2, 0x04);
-  dxl.driveMode(TARGET_ID3, 0x04);
-  dxl.driveMode(TARGET_ID4, 0x04);
-  dxl.driveMode(TARGET_ID5, 0x04);
-  dxl.driveMode(TARGET_ID6, 0x04);
-  dxl.driveMode(TARGET_ID7, 0x04);
-  dxl.driveMode(TARGET_ID8, 0x04);
-  dxl.driveMode(TARGET_ID11, 0x04);
-  dxl.driveMode(TARGET_ID12, 0x04);
-  dxl.driveMode(TARGET_ID13, 0x04);
-  dxl.driveMode(TARGET_ID14, 0x04);
-  dxl.driveMode(TARGET_ID15, 0x04);
-  dxl.driveMode(TARGET_ID16, 0x04);
-  dxl.driveMode(TARGET_ID17, 0x04);
-  dxl.driveMode(TARGET_ID18, 0x04);
-
-
-
-  dxl.profileVelocity(TARGET_ID1, profileVelocity);
-  dxl.profileVelocity(TARGET_ID2, profileVelocity);
-  dxl.profileVelocity(TARGET_ID3, profileVelocity);
-  dxl.profileVelocity(TARGET_ID4, profileVelocity);
-  dxl.profileVelocity(TARGET_ID5, profileVelocity);
-  dxl.profileVelocity(TARGET_ID6, profileVelocity);
-  dxl.profileVelocity(TARGET_ID7, profileVelocity);
-  dxl.profileVelocity(TARGET_ID8, profileVelocity);
-  dxl.profileVelocity(TARGET_ID11, profileVelocity);
-  dxl.profileVelocity(TARGET_ID12, profileVelocity);
-  dxl.profileVelocity(TARGET_ID13, profileVelocity);
-  dxl.profileVelocity(TARGET_ID14, profileVelocity);
-  dxl.profileVelocity(TARGET_ID15, profileVelocity);
-  dxl.profileVelocity(TARGET_ID16, profileVelocity);
-  dxl.profileVelocity(TARGET_ID17, profileVelocity);
-  dxl.profileVelocity(TARGET_ID18, profileVelocity);
-
   targetPos01 = dxl.presentPosition(TARGET_ID1); delay(de);
   targetPos02 = dxl.presentPosition(TARGET_ID2); delay(de);
   targetPos03 = dxl.presentPosition(TARGET_ID3); delay(de);
@@ -778,7 +765,11 @@ void demo() {
   targetPos15 = dxl.presentPosition(TARGET_ID15); delay(de);
   targetPos16 = dxl.presentPosition(TARGET_ID16); delay(de);
   targetPos17 = dxl.presentPosition(TARGET_ID17); delay(de);
-  targetPos18 = dxl.presentPosition(TARGET_ID18);
+  targetPos18 = dxl.presentPosition(TARGET_ID18); delay(de);
+  targetPos21 = dxl.presentPosition(TARGET_ID21); delay(de);
+  // targetPos22 = dxl.presentPosition(TARGET_ID22); delay(de);
+  targetPos23 = dxl.presentPosition(TARGET_ID23); delay(de);
+  targetPos24 = dxl.presentPosition(TARGET_ID24); delay(de);
 
   // Serial.print(" demo = ");
   Serial.print(targetPos01); Serial.print(", ");
@@ -797,7 +788,11 @@ void demo() {
   Serial.print(targetPos15); Serial.print(", ");
   Serial.print(targetPos16); Serial.print(", ");
   Serial.print(targetPos17); Serial.print(", ");
-  Serial.println(targetPos18);
+  Serial.print(targetPos18); Serial.print(", ");
+  Serial.print(targetPos21); Serial.print(", ");
+  // Serial.print(targetPos22); Serial.print(", ");
+  Serial.print(targetPos23); Serial.print(", ");
+  Serial.println(targetPos24);
 }
 
 
@@ -1431,6 +1426,10 @@ void armloop() {
     dxl.driveMode(TARGET_ID16, 0x04);
     dxl.driveMode(TARGET_ID17, 0x04);
     dxl.driveMode(TARGET_ID18, 0x04);
+    dxl.driveMode(TARGET_ID21, 0x04);
+    dxl.driveMode(TARGET_ID22, 0x05);
+    dxl.driveMode(TARGET_ID23, 0x04);
+    dxl.driveMode(TARGET_ID24, 0x04);
 
 
 
@@ -1450,6 +1449,10 @@ void armloop() {
     dxl.profileVelocity(TARGET_ID16, profileVelocity);
     dxl.profileVelocity(TARGET_ID17, profileVelocity);
     dxl.profileVelocity(TARGET_ID18, profileVelocity);
+    dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
+    dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
+    dxl.profileVelocity(TARGET_ID24, profileVelocity);
+
     delay(10);
 
     if (swAudioState == 0) {
@@ -1576,6 +1579,10 @@ void setup() {
   dxl.addModel<DxlModel::X>(TARGET_ID16);
   dxl.addModel<DxlModel::X>(TARGET_ID17);
   dxl.addModel<DxlModel::X>(TARGET_ID18);
+  
+  dxl.addModel<DxlModel::X>(TARGET_ID21);
+  dxl.addModel<DxlModel::X>(TARGET_ID23);
+  dxl.addModel<DxlModel::X>(TARGET_ID24);
 
   dxl.torqueEnable(TARGET_ID1, false);
   dxl.torqueEnable(TARGET_ID2, false);
@@ -1594,6 +1601,24 @@ void setup() {
   dxl.torqueEnable(TARGET_ID16, false);
   dxl.torqueEnable(TARGET_ID17, false);
   dxl.torqueEnable(TARGET_ID18, false);
+
+  dxl.torqueEnable(TARGET_ID21, false);
+  dxl.torqueEnable(TARGET_ID23, false);
+  dxl.torqueEnable(TARGET_ID24, false);
+
+  dxl.torqueEnable(TARGET_ID21, true);
+  dxl.torqueEnable(TARGET_ID23, true);
+  dxl.torqueEnable(TARGET_ID24, true);
+
+  headProfileVelocity = 2000;
+  dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
+  dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
+  headProfileVelocity = 300;
+
+  dxl.goalPosition(TARGET_ID21, verticalHomePos);
+  dxl.goalPosition(TARGET_ID23, horizontalHomePos);
+
+
 
   Pgain_on();
 
@@ -1685,7 +1710,6 @@ void loop(void) {
     mainloop = false;
   }
 
-
   if (Serial.available()) {
     String command = Serial.readStringUntil('\n');
     Action action = checkAction(command);
@@ -1693,22 +1717,62 @@ void loop(void) {
 
 
     if (action.id == ArrowPressUp) {
-
+      if (verticalLevel < pressButtonCount) {
+        verticalLevel++;
+        if (verticalLevel > 0) {
+          dxl.goalPosition(TARGET_ID21, (((verticalHomePos - verticalMinPos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
+        } else if (verticalLevel < 0) {
+          dxl.goalPosition(TARGET_ID21, (((verticalMaxPos - verticalHomePos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
+        } else {
+          dxl.goalPosition(TARGET_ID21, verticalHomePos);
+        }
+      }
+      delay(1000);
     }
 
 
     if (action.id == ArrowPressDown) {
-      
+      if (verticalLevel > -pressButtonCount) {
+        verticalLevel--;
+        if (verticalLevel > 0) {
+          dxl.goalPosition(TARGET_ID21, ((verticalHomePos - verticalMinPos) / pressButtonCount) * (-verticalLevel) + verticalHomePos);
+        } else if (verticalLevel < 0) {
+          dxl.goalPosition(TARGET_ID21, ((verticalMaxPos - verticalHomePos) / pressButtonCount) * (-verticalLevel) + verticalHomePos);
+        } else {
+          dxl.goalPosition(TARGET_ID21, verticalHomePos);
+        }
+      }
+      delay(1000);
     }
 
 
     if (action.id == ArrowPressRight) {
-      
+      if (horizontalLevel < pressButtonCount) {
+        horizontalLevel++;
+        if (horizontalLevel > 0) {
+          dxl.goalPosition(TARGET_ID23, ((horizontalHomePos - horizontalMinPos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
+        } else if (horizontalLevel < 0) {
+          dxl.goalPosition(TARGET_ID23, ((horizontalMaxPos - horizontalHomePos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
+        } else {
+          dxl.goalPosition(TARGET_ID23, horizontalHomePos);
+        }
+      }
+      delay(1000);
     }
 
 
     if (action.id == ArrowPressLeft) {
-      
+      if (horizontalLevel > -pressButtonCount) {
+        horizontalLevel--;
+        if (horizontalLevel > 0) {
+          dxl.goalPosition(TARGET_ID23, ((horizontalHomePos - horizontalMinPos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
+        } else if (horizontalLevel < 0) {
+          dxl.goalPosition(TARGET_ID23, ((horizontalMaxPos - horizontalHomePos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
+        } else {
+          dxl.goalPosition(TARGET_ID23, horizontalHomePos);
+        }
+      }
+      delay(1000);
     }
 
 
@@ -1718,7 +1782,27 @@ void loop(void) {
 
 
     if (action.id == ArrowPressCenter) {
+      if (verticalLevel > pressButtonCount - 2 || verticalLevel < -pressButtonCount + 2){
+        headProfileVelocity = 1000;
+        dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
+      }
+      if (horizontalLevel > pressButtonCount - 2 || horizontalLevel < -pressButtonCount + 2){
+        headProfileVelocity = 1000;
+        dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
+      }
       
+      dxl.goalPosition(TARGET_ID21, verticalHomePos);
+      dxl.goalPosition(TARGET_ID23, horizontalHomePos);
+      verticalLevel = 0;
+      horizontalLevel = 0;
+      headProfileVelocity = 300;
+      dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
+      dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
+
+      delay(1000);
+      Serial.print(verticalLevel);
+      Serial.print(",");
+      Serial.println(dxl.presentPosition(TARGET_ID21));
     }
 
 
