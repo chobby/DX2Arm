@@ -92,7 +92,7 @@ Action ACTIONS[] = {
 };
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.13.1"
+#define VERSION_NUMBER  "ver. 0.13.2"
 // -----------------------------------
 
 String bluetoothDeviceName = "YushunArm";
@@ -136,7 +136,6 @@ int playMotionTime = 200;
 const int timer = defaultRecordNumber;
 int TIMERLENGTH = 0;
 
-const int pressButtonCount = 3;
 
 int horizontalLevel = 0;  //0:真ん中, 1:左Level.1, 2:左Level.2, 3:左Level.3, -1:右Level.1, -2:右Level.2, -3:右Level.3
 int verticalLevel = 0;  //0:真ん中, 1:上Level.1, 2:上Level.2, 3:上Level.3, -1:下Level.1, -2:下Level.2, -3:下Level.3
@@ -144,8 +143,13 @@ int verticalLevel = 0;  //0:真ん中, 1:上Level.1, 2:上Level.2, 3:上Level.3,
 int currentHorizontalPos = 0;
 int currentVerticalPos = 0;
 
+const int pressButtonCount = 2;
+
+const int profileVelocity = 150;
+int headProfileVelocity = 1500;
+
 const int verticalHomePos = 2000; //中央
-const int verticalMaxPos = 2600; //下
+const int verticalMaxPos = 2200; //下
 const int verticalMinPos = 1700; //上
 const int horizontalHomePos = 2000; //中央
 const int horizontalMaxPos = 2500; //左
@@ -194,8 +198,6 @@ int serialnumberP = 700;
 int serialnumberI = 2;
 int serialnumberD = 1;
 
-const int profileVelocity = 150;
-int headProfileVelocity = 300;
 
 File file;
 
@@ -1514,9 +1516,9 @@ void setup() {
   dxl.torqueEnable(TARGET_ID17, false);
   dxl.torqueEnable(TARGET_ID18, false);
 
-  dxl.torqueEnable(TARGET_ID21, false);
-  dxl.torqueEnable(TARGET_ID23, false);
-  dxl.torqueEnable(TARGET_ID24, false);
+  // dxl.torqueEnable(TARGET_ID21, false);
+  // dxl.torqueEnable(TARGET_ID23, false);
+  // dxl.torqueEnable(TARGET_ID24, false);
 
   dxl.torqueEnable(TARGET_ID21, true);
   dxl.torqueEnable(TARGET_ID23, true);
@@ -1525,7 +1527,7 @@ void setup() {
   headProfileVelocity = 2000;
   dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
   dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
-  headProfileVelocity = 300;
+  headProfileVelocity = 1500;
 
   dxl.goalPosition(TARGET_ID21, verticalHomePos);
   dxl.goalPosition(TARGET_ID23, horizontalHomePos);
@@ -1677,11 +1679,11 @@ void loop(void) {
 
     if (action.id == ArrowPressCenter) {
       if (verticalLevel > pressButtonCount - 2 || verticalLevel < -pressButtonCount + 2){
-        headProfileVelocity = 1000;
+        headProfileVelocity = 1500;
         dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
       }
       if (horizontalLevel > pressButtonCount - 2 || horizontalLevel < -pressButtonCount + 2){
-        headProfileVelocity = 1000;
+        headProfileVelocity = 1500;
         dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
       }
       
@@ -1689,7 +1691,7 @@ void loop(void) {
       dxl.goalPosition(TARGET_ID23, horizontalHomePos);
       verticalLevel = 0;
       horizontalLevel = 0;
-      headProfileVelocity = 300;
+      headProfileVelocity = 1500;
       dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
       dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
     }
