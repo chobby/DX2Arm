@@ -1,7 +1,4 @@
-//オーディオモード、残り時間のバーは出来てる
-//キーパッドの色エラー出るのでそのまま、秒数のコントロールも出来ていない…
-
-
+#include <Arduino.h>
 #include <Dynamixel.h>
 #define DYNAMIXEL_SERIAL Serial2 // change as you want
 
@@ -95,7 +92,7 @@ Action ACTIONS[] = {
 };
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.13.0"
+#define VERSION_NUMBER  "ver. 0.13.2"
 // -----------------------------------
 
 String bluetoothDeviceName = "YushunArm";
@@ -139,7 +136,6 @@ int playMotionTime = 200;
 const int timer = defaultRecordNumber;
 int TIMERLENGTH = 0;
 
-const int pressButtonCount = 3;
 
 int horizontalLevel = 0;  //0:真ん中, 1:左Level.1, 2:左Level.2, 3:左Level.3, -1:右Level.1, -2:右Level.2, -3:右Level.3
 int verticalLevel = 0;  //0:真ん中, 1:上Level.1, 2:上Level.2, 3:上Level.3, -1:下Level.1, -2:下Level.2, -3:下Level.3
@@ -147,8 +143,13 @@ int verticalLevel = 0;  //0:真ん中, 1:上Level.1, 2:上Level.2, 3:上Level.3,
 int currentHorizontalPos = 0;
 int currentVerticalPos = 0;
 
+const int pressButtonCount = 2;
+
+const int profileVelocity = 150;
+int headProfileVelocity = 1500;
+
 const int verticalHomePos = 2000; //中央
-const int verticalMaxPos = 2600; //下
+const int verticalMaxPos = 2200; //下
 const int verticalMinPos = 1700; //上
 const int horizontalHomePos = 2000; //中央
 const int horizontalMaxPos = 2500; //左
@@ -197,8 +198,6 @@ int serialnumberP = 700;
 int serialnumberI = 2;
 int serialnumberD = 1;
 
-const int profileVelocity = 150;
-int headProfileVelocity = 300;
 
 File file;
 
@@ -230,9 +229,6 @@ const uint8_t TARGET_ID21 = 21;
 const uint8_t TARGET_ID22 = 22;
 const uint8_t TARGET_ID23 = 23;
 const uint8_t TARGET_ID24 = 24;
-
-
-
 
 
 int dxl_goal_position1[2];
@@ -304,9 +300,6 @@ TFT_eSPI_Button key[9];
 
 
 
-
-
-
 void DISPprint() {
   // Update the number display field
 
@@ -321,9 +314,7 @@ void DISPprint() {
   delay(10); // UI debouncing
 }
 
-
 void DISPreset() {
-
   tft.setTextDatum(TL_DATUM);        // Use top left corner as text coord datum
   tft.setFreeFont(&FreeSans18pt7b);  // Choose a nice font that fits box
   tft.setTextColor(DISP_TCOLOR);     // Set the font colour
@@ -334,7 +325,6 @@ void DISPreset() {
 }
 
 void DISPwrite(String A) {
-
   Serial.print("DISP= ");
   Serial.println(A);
   tft.setTextDatum(TL_DATUM);        // Use top left corner as text coord datum
@@ -351,7 +341,6 @@ void DISPwrite(String A) {
 
 void UNDERDISPprint() {
   // Update the number display field
-
   tft.setTextDatum(TL_DATUM);        // Use top left corner as text coord datum
   tft.setFreeFont(&FreeSans18pt7b);  // Choose a nice font that fits box
   tft.setTextColor(UNDERDISP_TCOLOR);     // Set the font colour
@@ -363,9 +352,7 @@ void UNDERDISPprint() {
   delay(10); // UI debouncing
 }
 
-
 void UNDERDISPreset() {
-
   tft.setTextDatum(TL_DATUM);        // Use top left corner as text coord datum
   tft.setFreeFont(&FreeSans18pt7b);  // Choose a nice font that fits box
   tft.setTextColor(UNDERDISP_TCOLOR);     // Set the font colour
@@ -376,7 +363,6 @@ void UNDERDISPreset() {
 }
 
 void UNDERDISPwrite(String A) {
-
   tft.setTextDatum(TL_DATUM);        // Use top left corner as text coord datum
   tft.setFreeFont(&FreeSans18pt7b);  // Choose a nice font that fits box
   tft.setTextColor(UNDERDISP_TCOLOR);     // Set the font colour
@@ -391,7 +377,6 @@ void UNDERDISPwrite(String A) {
 
 void TIMERDISPprint() {
   // Update the number display field
-
   tft.setTextDatum(TL_DATUM);        // Use top left corner as text coord datum
   tft.setFreeFont(&FreeSans18pt7b);  // Choose a nice font that fits box
   tft.setTextColor(UNDERDISP_TCOLOR);     // Set the font colour
@@ -403,15 +388,12 @@ void TIMERDISPprint() {
   delay(10); // UI debouncing
 }
 
-
 void TIMERDISPreset() {
-
   tft.fillRect(TIMERDISP_X, TIMERDISP_Y, TIMERDISP_W, TIMERDISP_H, TFT_BLACK);  // Draw number display area and frame
   tft.drawRect(TIMERDISP_X, TIMERDISP_Y, TIMERDISP_W, TIMERDISP_H, TFT_WHITE);
 }
 
 void TIMERDISPwrite() {
-
   float progress = (float)TIMERLENGTH /   (float)timer ;
   int fillWidth = progress * TIMERDISP_W;
 
@@ -419,7 +401,6 @@ void TIMERDISPwrite() {
 }
 
 void touch_calibrate() {
-
   uint16_t calData[5];
   uint8_t calDataOK = 0;
 
@@ -500,7 +481,6 @@ void status(const char *msg) {
 
 void drawKeypad() {
   // Draw the keys
-
   for (uint8_t row = 0; row < 3; row++) {
     for (uint8_t col = 0; col < 3; col++) {
       uint8_t b = col + row * 3;
@@ -523,7 +503,6 @@ void drawKeypad() {
         keyLabel[b][4] = '\0';
       }
 
-      
       if(audioMode == 0) {
           keyColor[0] = TFT_DARKGREEN;
           keyColor[1] = TFT_DARKGREY;
@@ -603,7 +582,6 @@ void drawKeypad() {
 }
 
 void Pgain_on() {
-  
   if (serialnumberI > 1) {
     dxl.positionPGain(TARGET_ID1, serialnumberP);
     dxl.positionPGain(TARGET_ID2, serialnumberP);
@@ -624,19 +602,16 @@ void Pgain_on() {
 }
 
 void rightArmRange(int a1, int a2) {
-
   int r = 230;
   if (a1 < a2 + r && a2 - r < a1)rightArmFlag = rightArmFlag + 1;
 }
 
 void leftArmRange(int a1, int a2) {
-
   int r = 230;
   if (a1 < a2 + r && a2 - r < a1)leftArmFlag = leftArmFlag + 1;
 }
 
 void zero() { //フリーの時、落下防止に動きを遅くするフラグをONにする
-
   rightArmFlag = 1;
   leftArmFlag = 1;
   int de = 1; delay(de);
@@ -662,13 +637,7 @@ void zero() { //フリーの時、落下防止に動きを遅くするフラグ�
   leftArmRange(targetPos14, ran14);
 
   if (rightArmFlag == 4)rightArmFlag = 0;
-  // Serial.print(" Rflag : ");
-  // Serial.print(rightArmFlag);
-  // Serial.print(":");
   if (leftArmFlag == 4)leftArmFlag = 0;
-  // Serial.print(" Lflag : ");
-  // Serial.print(leftArmFlag);
-  // Serial.print(":");
 }
 
 void slow() { //条件がONの時、スローにする。ただし腕が全開の時は例外とする
@@ -743,9 +712,6 @@ void slow() { //条件がONの時、スローにする。ただし腕が全開�
 }
 
 void demo() {
-
-  // Serial.print("mode= ");//デモの時は基本10になっている。
-  // Serial.print(mode);
   int de = 5;
   delay(de);
 
@@ -767,11 +733,9 @@ void demo() {
   targetPos17 = dxl.presentPosition(TARGET_ID17); delay(de);
   targetPos18 = dxl.presentPosition(TARGET_ID18); delay(de);
   targetPos21 = dxl.presentPosition(TARGET_ID21); delay(de);
-  // targetPos22 = dxl.presentPosition(TARGET_ID22); delay(de);
   targetPos23 = dxl.presentPosition(TARGET_ID23); delay(de);
   targetPos24 = dxl.presentPosition(TARGET_ID24); delay(de);
 
-  // Serial.print(" demo = ");
   Serial.print(targetPos01); Serial.print(", ");
   Serial.print(targetPos02); Serial.print(", ");
   Serial.print(targetPos03); Serial.print(", ");
@@ -790,7 +754,6 @@ void demo() {
   Serial.print(targetPos17); Serial.print(", ");
   Serial.print(targetPos18); Serial.print(", ");
   Serial.print(targetPos21); Serial.print(", ");
-  // Serial.print(targetPos22); Serial.print(", ");
   Serial.print(targetPos23); Serial.print(", ");
   Serial.println(targetPos24);
 }
@@ -850,8 +813,6 @@ void recordMotion() {
 
     //***********************************************
 
-    //    //レコード開始の合図をつけるならここ
-
     //全脱力
     dxl.torqueEnable(TARGET_ID1, false);
     dxl.torqueEnable(TARGET_ID2, false);
@@ -881,14 +842,12 @@ void recordMotion() {
         stopRecording = true;
       }
 
-
       DISPwrite(String(i)+"/"+String(defaultRecordNumber));
       
       UNDERDISPwrite(String(mode)+", "+String(targetPos01)+", "+String(targetPos02)+", "+String(targetPos03)+", "+String(targetPos04)+", "+String(targetPos11)+", "+String(targetPos12)+", "+String(targetPos13)+", "+String(targetPos14));
 
       TIMERLENGTH = i;
       TIMERDISPwrite();
-    
 
       int de = 3; delay(de);
       targetPos01 = dxl.presentPosition(TARGET_ID1); delay(de);
@@ -909,31 +868,8 @@ void recordMotion() {
       targetPos17 = dxl.presentPosition(TARGET_ID17); delay(de);
       targetPos18 = dxl.presentPosition(TARGET_ID18);
 
-      //Serial.print("timer = ");  Serial.println(t);
-
-      Serial1.write(0);
-
       Serial.print("レコード中 = ");
       Serial.print(i); Serial.print(" : ");
-      // Serial.print(targetPos01); Serial.print(", ");
-      // Serial.print(targetPos02); Serial.print(", ");
-      // Serial.print(targetPos03); Serial.print(", ");
-      // Serial.print(targetPos04); Serial.print(", ");
-      // Serial.print(targetPos05); Serial.print(", ");
-      // Serial.print(targetPos06); Serial.print(", ");
-      // Serial.print(targetPos07); Serial.print(", ");
-      // Serial.print(targetPos08); Serial.print(", ");
-
-      // Serial.print(targetPos11); Serial.print(", ");
-      // Serial.print(targetPos12); Serial.print(", ");
-      // Serial.print(targetPos13); Serial.print(", ");
-      // Serial.print(targetPos14); Serial.print(", ");
-      // Serial.print(targetPos15); Serial.print(", ");
-      // Serial.print(targetPos16); Serial.print(", ");
-      // Serial.print(targetPos17); Serial.print(", ");
-      // Serial.print(targetPos18); Serial.print(", MODE=");  
-      // Serial.print(mode);
-      // Serial.print(", Audio="); Serial.print(swAudioState);
 
       //レコード書き出し
 
@@ -1002,8 +938,7 @@ void recordMotion() {
       Serial.print(targetPos18);
       file.print(",");
       Serial.print(",");
-      // file.println(0);
-      // Serial.println(0);
+
       if (stopRecording) { // STOPボタンが押されたかどうかをチェック
         for (int i = 3; i < 9; i++) {
           keyColor[i] = TFT_RED; // 数字ボタンを赤色に変更
@@ -1034,7 +969,6 @@ void recordMotion() {
         file.println(0);
         Serial.println(0);
       }
-
     }
 
     if (!stopRecording) { // STOPボタンが押されていない場合
@@ -1173,7 +1107,6 @@ void playMotion() {
         break;
       }
 
-
       int ss1 = values[i * number];
       int ss2 = values[i * number + 1];
       int ss3 = values[i * number + 2];
@@ -1191,7 +1124,6 @@ void playMotion() {
       int ss16 = values[i * number + 13];
       int ss17 = values[i * number + 14];
       int ss18 = values[i * number + 15];
-
 
       Serial.print("フレーム ");
       Serial.print(i + 1);
@@ -1225,7 +1157,6 @@ void playMotion() {
       s17 = dxl.presentPosition(TARGET_ID17); delay(de);
       s18 = dxl.presentPosition(TARGET_ID18);
 
-
       Serial.print("差分 = ");
       Serial.print(ss1 - s1); Serial.print(", ");
       Serial.print(ss2 - s2); Serial.print(", ");
@@ -1244,7 +1175,6 @@ void playMotion() {
       Serial.print(ss16 - s16); Serial.print(", ");
       Serial.print(ss17 - s17); Serial.print(", ");
       Serial.println(ss18 - s18);
-
 
       rightArmRange(s1, ran1);
       rightArmRange(s2, ran2);
@@ -1276,7 +1206,6 @@ void playMotion() {
       dxl.goalPosition(TARGET_ID18, ss18 + 15);
 
       digitalWrite(pin1, LOW);
-
     }
 
     if (!stopPlaying) { // STOPボタンが押されていない場合
@@ -1286,19 +1215,13 @@ void playMotion() {
       stopPlaying = false;
     }
 
-    //dxl.torqueEnable(TARGET_ID1, false);
-    //dxl.torqueEnable(TARGET_ID2, false);
     dxl.torqueEnable(TARGET_ID3, false);
-    //dxl.torqueEnable(TARGET_ID4, false);
     dxl.torqueEnable(TARGET_ID5, false);
     dxl.torqueEnable(TARGET_ID6, false);
     dxl.torqueEnable(TARGET_ID7, false);
     dxl.torqueEnable(TARGET_ID8, false);
 
-    //dxl.torqueEnable(TARGET_ID11, false);
-    //dxl.torqueEnable(TARGET_ID12, false);
     dxl.torqueEnable(TARGET_ID13, false);
-    //dxl.torqueEnable(TARGET_ID14, false);
     dxl.torqueEnable(TARGET_ID15, false);
     dxl.torqueEnable(TARGET_ID16, false);
     dxl.torqueEnable(TARGET_ID17, false);
@@ -1401,9 +1324,7 @@ void audioLoop() {
 
 }
 
-
 void armloop() {
-
   if (audioMode > 0) {
     audioLoop();
   } else { 
@@ -1430,8 +1351,6 @@ void armloop() {
     dxl.driveMode(TARGET_ID22, 0x05);
     dxl.driveMode(TARGET_ID23, 0x04);
     dxl.driveMode(TARGET_ID24, 0x04);
-
-
 
     dxl.profileVelocity(TARGET_ID1, profileVelocity);
     dxl.profileVelocity(TARGET_ID2, profileVelocity);
@@ -1461,7 +1380,6 @@ void armloop() {
     if (SerialBT.available()) {
       receivedChar = SerialBT.read();
     }
-
 
     //mode=0（RECモードの時）、ボタンを押されたらモーション記録プロセスへ
     if (sw01State == 0 && mode == 0) {
@@ -1495,7 +1413,6 @@ void armloop() {
       mode = 10;
       sw05State = 1;
     }
-
 
     //mode=10（RUNモードの時）、ボタンを押されたらモーション再生プロセスへ
 
@@ -1549,10 +1466,7 @@ void armloop() {
 }
 
 
-
-
 void setup() {
-
   // Serial.begin(115200);
   Serial.begin(19200);
   Serial1.begin(115200, SERIAL_8N1, rs485TX, rs485RX);
@@ -1602,9 +1516,9 @@ void setup() {
   dxl.torqueEnable(TARGET_ID17, false);
   dxl.torqueEnable(TARGET_ID18, false);
 
-  dxl.torqueEnable(TARGET_ID21, false);
-  dxl.torqueEnable(TARGET_ID23, false);
-  dxl.torqueEnable(TARGET_ID24, false);
+  // dxl.torqueEnable(TARGET_ID21, false);
+  // dxl.torqueEnable(TARGET_ID23, false);
+  // dxl.torqueEnable(TARGET_ID24, false);
 
   dxl.torqueEnable(TARGET_ID21, true);
   dxl.torqueEnable(TARGET_ID23, true);
@@ -1613,15 +1527,12 @@ void setup() {
   headProfileVelocity = 2000;
   dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
   dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
-  headProfileVelocity = 300;
+  headProfileVelocity = 1500;
 
   dxl.goalPosition(TARGET_ID21, verticalHomePos);
   dxl.goalPosition(TARGET_ID23, horizontalHomePos);
 
-
-
   Pgain_on();
-
 
   ran1 = dxl.presentPosition(TARGET_ID1); delay(5);
   ran2 = dxl.presentPosition(TARGET_ID2); delay(5);
@@ -1648,8 +1559,6 @@ void setup() {
   pinMode(pin1, OUTPUT);
   pinMode(pin2, OUTPUT);
   pinMode(pin3, OUTPUT);
-  
-  
 
   tft.init();  // Initialise the TFT screen
   tft.setRotation(0);// Set the rotation before we calibrate
@@ -1677,14 +1586,6 @@ void setup() {
   Serial.println("mode= " + mode);
   Serial.print("sw01State= " + sw01State);
 
-  // timer = timerBegin(0, 80, true);
-	// timerAttachInterrupt(timer, &onTimer, true);
-	// timerAlarmWrite(timer, 33333, true);  //毎秒30回ポジションを保存する
-	// timerAlarmEnable(timer);
-
-  Serial1.println("ON_LED");
-  Serial1.println("Green_LED");
-
   pinMode(swAudio, INPUT_PULLUP);
   Serial.println("setup done");
 }
@@ -1701,7 +1602,6 @@ Action checkAction(String command) {
 
 
 void loop(void) {
-
   if (mainloop == false){
     digitalWrite(pin2, LOW);
     mainloop = true;
@@ -1727,7 +1627,6 @@ void loop(void) {
           dxl.goalPosition(TARGET_ID21, verticalHomePos);
         }
       }
-      delay(1000);
     }
 
 
@@ -1742,7 +1641,6 @@ void loop(void) {
           dxl.goalPosition(TARGET_ID21, verticalHomePos);
         }
       }
-      delay(1000);
     }
 
 
@@ -1757,7 +1655,6 @@ void loop(void) {
           dxl.goalPosition(TARGET_ID23, horizontalHomePos);
         }
       }
-      delay(1000);
     }
 
 
@@ -1772,7 +1669,6 @@ void loop(void) {
           dxl.goalPosition(TARGET_ID23, horizontalHomePos);
         }
       }
-      delay(1000);
     }
 
 
@@ -1783,11 +1679,11 @@ void loop(void) {
 
     if (action.id == ArrowPressCenter) {
       if (verticalLevel > pressButtonCount - 2 || verticalLevel < -pressButtonCount + 2){
-        headProfileVelocity = 1000;
+        headProfileVelocity = 1500;
         dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
       }
       if (horizontalLevel > pressButtonCount - 2 || horizontalLevel < -pressButtonCount + 2){
-        headProfileVelocity = 1000;
+        headProfileVelocity = 1500;
         dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
       }
       
@@ -1795,14 +1691,9 @@ void loop(void) {
       dxl.goalPosition(TARGET_ID23, horizontalHomePos);
       verticalLevel = 0;
       horizontalLevel = 0;
-      headProfileVelocity = 300;
+      headProfileVelocity = 1500;
       dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
       dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
-
-      delay(1000);
-      Serial.print(verticalLevel);
-      Serial.print(",");
-      Serial.println(dxl.presentPosition(TARGET_ID21));
     }
 
 
@@ -1844,9 +1735,6 @@ void loop(void) {
     if (action.id == ButtonOut) {
     }
   }
-
-
-
 
   uint16_t t_x = 0, t_y = 0; // To store the touch coordinates
 
@@ -1918,24 +1806,14 @@ void loop(void) {
       drawKeypad();
 
     }
-    //DISPprint();
   }
   armloop();
   zero();
   slow();
 
   int swAudioState = digitalRead(swAudio);
-  if (swAudioState == 0) {  // Assuming the switch pulls the pin LOW when pressed
-    // Serial.print("Audio Switch ON  ");
-  } else {
-    // Serial.print("Audio Switch OFF  ");
-  }
   if (swAudioState == 0) {
     audioMode = 1;
   }
-  // Serial.print(" audioMode= ");
-  // Serial.print(audioMode);
-  // Serial.print(" swAudioState= ");
-  // Serial.print(swAudioState);
 
 }
