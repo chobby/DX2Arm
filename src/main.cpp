@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <Dynamixel.h>
+#include <esp_system.h>
 #define DYNAMIXEL_SERIAL Serial2 // change as you want
 
 #include <SPIFFS.h>
@@ -96,7 +97,7 @@ Action ACTIONS[] = {
 };
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.14.1"
+#define VERSION_NUMBER  "ver. 0.14.2"
 // -----------------------------------
 
 String bluetoothDeviceName = "YushunArm";
@@ -1532,6 +1533,71 @@ void serialTask(void * parameter) {
         } else if (action.id == ButtonPressE) {
           requestedMode = 15;
           motionRequested = true;
+        } else if (action.id == ButtonPressY) {
+          // // メモリ使用率を表示
+          uint32_t totalHeap = ESP.getHeapSize();
+          uint32_t freeHeap = ESP.getFreeHeap();
+          uint32_t usedHeap = totalHeap - freeHeap;
+          float heapUsage = (float)usedHeap / totalHeap * 100;
+
+          uint32_t totalPsram = ESP.getPsramSize();
+          uint32_t freePsram = ESP.getFreePsram();
+          uint32_t usedPsram = totalPsram - freePsram;
+          float psramUsage = (float)usedPsram / totalPsram * 100;
+
+          Serial.printf("Heap Max: %u bytes\n", totalHeap);
+          Serial.printf("Heap Used: %u bytes\n", usedHeap);
+          Serial.printf("Heap Usage: %.2f%%\n", heapUsage);
+
+          if (totalPsram > 0) {
+            Serial.printf("PSRAM Max: %u bytes\n", totalPsram);
+            Serial.printf("PSRAM Used: %u bytes\n", usedPsram);
+            Serial.printf("PSRAM Usage: %.2f%%\n", psramUsage);
+          } else {
+            Serial.println("PSRAM not available");
+          }
+
+          // SPIFFS information
+          if (SPIFFS.begin()) {
+            uint32_t totalSpiffs = SPIFFS.totalBytes();
+            uint32_t usedSpiffs = SPIFFS.usedBytes();
+            float spiffsUsage = (float)usedSpiffs / totalSpiffs * 100;
+
+            Serial.printf("SPIFFS Max: %u bytes\n", totalSpiffs);
+            Serial.printf("SPIFFS Used: %u bytes\n", usedSpiffs);
+            Serial.printf("SPIFFS Usage: %.2f%%\n", spiffsUsage);
+
+            SPIFFS.end();
+          } else {
+            Serial.println("SPIFFS Mount Failed");
+          }
+
+        } else if (action.id == ButtonPressZ) {
+          // // .txtファイルを全て削除
+          // File root = SPIFFS.open("/");
+          // File file = root.openNextFile();
+          // while (file) {
+          //   if (String(file.name()).endsWith(".txt")) {
+          //     SPIFFS.remove(file.name());
+          //   }
+          //   file = root.openNextFile();
+          // }
+          // Serial.println("All .txt files deleted.");
+
+          // Delete all files in SPIFFS
+          if (SPIFFS.begin()) {
+            File root = SPIFFS.open("/");
+            File file = root.openNextFile();
+            while (file) {
+              SPIFFS.remove(file.name());
+              file = root.openNextFile();
+            }
+            Serial.println("All files deleted");
+            SPIFFS.end();
+          } else {
+            Serial.println("SPIFFS Mount Failed");
+          }
+
         } else if (action.id == ButtonOut) {
         }
 
