@@ -3,6 +3,7 @@
 #define DYNAMIXEL_SERIAL Serial2 // change as you want
 
 #include <SPIFFS.h>
+#include "freertos/semphr.h"
 #include "BluetoothSerial.h"
 #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
 #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
@@ -12,6 +13,9 @@ String numberBuffer1 = "test";
 
 BluetoothSerial SerialBT;
 
+SemaphoreHandle_t xSemaphore;
+
+TaskHandle_t thp[1]; // マルチスレッドのタスクハンドル格納用
 
 
 static const int Empty = 0;
@@ -92,7 +96,7 @@ Action ACTIONS[] = {
 };
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.13.2"
+#define VERSION_NUMBER  "ver. 0.14.0"
 // -----------------------------------
 
 String bluetoothDeviceName = "YushunArm";
@@ -124,13 +128,18 @@ Dynamixel dxl(RXD2, TXD2);
 
 const int defaultRecordNumber = 600;  //デフォルトの録画する数
 int number = 17; //←ここの数字はID+1とする 呼び出す数
-int values[defaultRecordNumber * 18 ]; //←ここの数字はID＋１とする
-char buffer[24]; // 数値の一時的な保持のためのバッファ
+int* values = nullptr;  //動的メモリ用のポインタ
+// int values[defaultRecordNumber * 18 ]; //←ここの数字はID＋１とする
+// char buffer[24]; // 数値の一時的な保持のためのバッファ
+char buffer[16]; // 数値の一時的な保持のためのバッファ
 
 int startRecordTime = 0;
 int endRecordTime = 0;
 int totalRecordTime = 0;
 int playMotionTime = 200;
+
+bool motionRequested = false;
+int requestedMode = 0;
 
 
 const int timer = defaultRecordNumber;
@@ -984,54 +993,33 @@ void recordMotion() {
   }
 }
 
+
 void playMotion() {
   // ファイルの読み取り
-
   DISPwrite("reader");
-  Serial.print("mode = " + mode);
+  Serial.print("mode = " + String(mode));
   drawKeypad();
 
   TIMERDISPreset();
 
   if (mode == 1 || mode == 11) {
-    //digitalWrite(led01, HIGH);
     file = SPIFFS.open("/test1.txt");
-    if (!file) {
-      Serial.println("ファイルの読み取りに失敗しました");
-      return;
-    }
-  }
-  if (mode == 2 || mode == 12) {
-    //digitalWrite(led02, HIGH);
+  } else if (mode == 2 || mode == 12) {
     file = SPIFFS.open("/test2.txt");
-    if (!file) {
-      Serial.println("ファイルの読み取りに失敗しました");
-      return;
-    }
-  }
-  if (mode == 3 || mode == 13) {
-    //digitalWrite(led03, HIGH);
+  } else if (mode == 3 || mode == 13) {
     file = SPIFFS.open("/test3.txt");
-    if (!file) {
-      Serial.println("ファイルの読み取りに失敗しました");
-      return;
-    }
-  }
-  if (mode == 4 || mode == 14) {
-    //digitalWrite(led04, HIGH);
+  } else if (mode == 4 || mode == 14) {
     file = SPIFFS.open("/test4.txt");
-    if (!file) {
-      Serial.println("ファイルの読み取りに失敗しました");
-      return;
-    }
-  }
-  if (mode == 5 || mode == 15) {
-    //digitalWrite(led05, HIGH);
+  } else if (mode == 5 || mode == 15) {
     file = SPIFFS.open("/test5.txt");
-    if (!file) {
-      Serial.println("ファイルの読み取りに失敗しました");
-      return;
-    }
+  } else {
+    Serial.println("Invalid mode");
+    return;
+  }
+
+  if (!file) {
+    Serial.println("ファイルの読み取りに失敗しました");
+    return;
   }
 
   // ファイルの内容を格納する配列
@@ -1052,11 +1040,14 @@ void playMotion() {
         buffer[pos++] = c; // バッファに文字を追加
       }
     }
+
+    // WDTリセットのための遅延
+    vTaskDelay(1 / portTICK_PERIOD_MS);
   }
   file.close();
 
   // 総記録時間を取得
-  totalRecordTime = values[index - 2]; // 追加: 総記録時間は配列の最後から2番目に格納されています
+  totalRecordTime = values[index - 2]; // 総記録時間は配列の最後から2番目に格納されています
 
   // playTimeを画面に表示
   DISPwrite("Play Time: " + String(totalRecordTime) + " ms");
@@ -1064,13 +1055,10 @@ void playMotion() {
 
   playMotionTime = totalRecordTime / 164;
 
-
   mode = 255;
-  Serial.print(rightArmFlag);
-  Serial.print(leftArmFlag);
-  if (rightArmFlag == 0)mode = 256;
-  if (leftArmFlag == 0)mode = 256;
-  if (mode == 255 )slow();
+  if (rightArmFlag == 0) mode = 256;
+  if (leftArmFlag == 0) mode = 256;
+  if (mode == 255) slow();
   if (mode == 256) {
 
     dxl.torqueEnable(TARGET_ID1, true);
@@ -1092,7 +1080,8 @@ void playMotion() {
     dxl.torqueEnable(TARGET_ID18, true);
 
     // シリアルモニタにデータを表示&モータ実行
-    for (int i = 0; i < playMotionTime; i++) {
+    // for (int i = 0; i < playMotionTime; i++) {
+    for (int i = 0; i < playMotionTime && i * number + 15 < defaultRecordNumber * 36; i++) {
       // STOPボタンが押されたかどうかをチェック
       uint16_t t_x = 0, t_y = 0; // To store the touch coordinates
       bool pressed = tft.getTouch(&t_x, &t_y);
@@ -1100,11 +1089,16 @@ void playMotion() {
         stopPlaying = true;
       }
       if (stopPlaying) { // STOPボタンが押されたかどうかをチェック
-        for (int i = 3; i < 9; i++) {
-          keyColor[i] = TFT_DARKGREEN; // 数字ボタンを緑色に変更
+        for (int j = 3; j < 9; j++) {
+          keyColor[j] = TFT_DARKGREEN; // 数字ボタンを緑色に変更
         }
         drawKeypad();
         break;
+      }
+
+      if (i * number + 15 >= defaultRecordNumber * 36) {
+        Serial.println("インデックス範囲を超えました");
+        return;
       }
 
       int ss1 = values[i * number];
@@ -1184,28 +1178,37 @@ void playMotion() {
       leftArmRange(s12, ran12);
       leftArmRange(s14, ran14);
 
-      digitalWrite(pin1, HIGH);
 
-      //モータへ送信
-      dxl.goalPosition(TARGET_ID1, ss1);
-      dxl.goalPosition(TARGET_ID2, ss2);
-      dxl.goalPosition(TARGET_ID3, ss3);
-      dxl.goalPosition(TARGET_ID4, ss4);
-      dxl.goalPosition(TARGET_ID5, ss5);
-      dxl.goalPosition(TARGET_ID6, ss6);
-      dxl.goalPosition(TARGET_ID7, ss7);
-      dxl.goalPosition(TARGET_ID8, ss8 + 15);
+      if (xSemaphoreTake(xSemaphore, (TickType_t)10) == pdTRUE) {
+        digitalWrite(pin1, HIGH);
 
-      dxl.goalPosition(TARGET_ID11, ss11);
-      dxl.goalPosition(TARGET_ID12, ss12);
-      dxl.goalPosition(TARGET_ID13, ss13);
-      dxl.goalPosition(TARGET_ID14, ss14);
-      dxl.goalPosition(TARGET_ID15, ss15);
-      dxl.goalPosition(TARGET_ID16, ss16);
-      dxl.goalPosition(TARGET_ID17, ss17);
-      dxl.goalPosition(TARGET_ID18, ss18 + 15);
 
-      digitalWrite(pin1, LOW);
+        //モータへ送信
+        dxl.goalPosition(TARGET_ID1, ss1);
+        dxl.goalPosition(TARGET_ID2, ss2);
+        dxl.goalPosition(TARGET_ID3, ss3);
+        dxl.goalPosition(TARGET_ID4, ss4);
+        dxl.goalPosition(TARGET_ID5, ss5);
+        dxl.goalPosition(TARGET_ID6, ss6);
+        dxl.goalPosition(TARGET_ID7, ss7);
+        dxl.goalPosition(TARGET_ID8, ss8 + 15);
+
+        dxl.goalPosition(TARGET_ID11, ss11);
+        dxl.goalPosition(TARGET_ID12, ss12);
+        dxl.goalPosition(TARGET_ID13, ss13);
+        dxl.goalPosition(TARGET_ID14, ss14);
+        dxl.goalPosition(TARGET_ID15, ss15);
+        dxl.goalPosition(TARGET_ID16, ss16);
+        dxl.goalPosition(TARGET_ID17, ss17);
+        dxl.goalPosition(TARGET_ID18, ss18 + 15);
+
+        digitalWrite(pin1, LOW);
+        xSemaphoreGive(xSemaphore);
+
+      }
+
+      // WDTリセットのための遅延
+      vTaskDelay(1 / portTICK_PERIOD_MS);
     }
 
     if (!stopPlaying) { // STOPボタンが押されていない場合
@@ -1231,6 +1234,7 @@ void playMotion() {
     slow();
   }
 }
+
 
 
 
@@ -1466,15 +1470,165 @@ void armloop() {
 }
 
 
+Action checkAction(String command) {
+    command.trim();
+    for (int i = 0; i < sizeof(ACTIONS); i += 1) {
+        if (command == ACTIONS[i].command) {
+        return ACTIONS[i];
+        }
+    }
+    return ACTIONS[0];
+}
+
+
+void onlySerialCore(void *args) {
+  Serial.println("MultiCore running");
+  while (true) {
+    if (Serial.available()) {
+      String command = Serial.readStringUntil('\n');
+      Action action = checkAction(command);
+      if (action.id == 0) continue;
+
+      if (action.id == ArrowPressUp) {
+        if (verticalLevel < pressButtonCount) {
+          verticalLevel++;
+          dxl.goalPosition(TARGET_ID21, (((verticalHomePos - verticalMinPos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
+        }
+      } else if (action.id == ArrowPressDown) {
+        if (verticalLevel > -pressButtonCount) {
+          verticalLevel--;
+          dxl.goalPosition(TARGET_ID21, (((verticalMaxPos - verticalHomePos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
+        }
+      } else if (action.id == ArrowPressRight) {
+        if (horizontalLevel < pressButtonCount) {
+          horizontalLevel++;
+          dxl.goalPosition(TARGET_ID23, ((horizontalHomePos - horizontalMinPos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
+        }
+      } else if (action.id == ArrowPressLeft) {
+        if (horizontalLevel > -pressButtonCount) {
+          horizontalLevel--;
+          dxl.goalPosition(TARGET_ID23, ((horizontalMaxPos - horizontalHomePos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
+        }
+      } else if (action.id == ArrowPressCenter) {
+        dxl.goalPosition(TARGET_ID21, verticalHomePos);
+        dxl.goalPosition(TARGET_ID23, horizontalHomePos);
+        verticalLevel = 0;
+        horizontalLevel = 0;
+        dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
+        dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
+      } else if (action.id == ButtonPressA) {
+        mode = 11;
+        playMotion();
+      } else if (action.id == ButtonPressB) {
+        mode = 12;
+        playMotion();
+      } else if (action.id == ButtonPressC) {
+        mode = 13;
+        playMotion();
+      } else if (action.id == ButtonPressD) {
+        mode = 14;
+        playMotion();
+      } else if (action.id == ButtonPressE) {
+        mode = 15;
+        playMotion();
+      }
+
+      // Delay to prevent WDT reset
+      vTaskDelay(10 / portTICK_PERIOD_MS);
+    }
+  }
+}
+
+void serialTask(void * parameter) {
+  while (true) {
+    if (Serial.available()) {
+      String command = Serial.readStringUntil('\n');
+      Action action = checkAction(command);
+      if (action.id == 0) continue;
+
+
+      if (xSemaphoreTake(xSemaphore, (TickType_t)10) == pdTRUE) {
+        if (action.id == ArrowPressUp) {
+          if (verticalLevel < pressButtonCount) {
+            verticalLevel++;
+            dxl.goalPosition(TARGET_ID21, (((verticalHomePos - verticalMinPos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
+          }
+        } else if (action.id == ArrowPressDown) {
+          if (verticalLevel > -pressButtonCount) {
+            verticalLevel--;
+            dxl.goalPosition(TARGET_ID21, (((verticalMaxPos - verticalHomePos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
+          }
+        } else if (action.id == ArrowPressRight) {
+          if (horizontalLevel < pressButtonCount) {
+            horizontalLevel++;
+            dxl.goalPosition(TARGET_ID23, ((horizontalHomePos - horizontalMinPos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
+          }
+        } else if (action.id == ArrowPressLeft) {
+          if (horizontalLevel > -pressButtonCount) {
+            horizontalLevel--;
+            dxl.goalPosition(TARGET_ID23, ((horizontalMaxPos - horizontalHomePos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
+          }
+        } else if (action.id == ArrowPressCenter) {
+          dxl.goalPosition(TARGET_ID21, verticalHomePos);
+          dxl.goalPosition(TARGET_ID23, horizontalHomePos);
+          verticalLevel = 0;
+          horizontalLevel = 0;
+          dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
+          dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
+        } else if (action.id == ButtonPressA) {
+          requestedMode = 11;
+          motionRequested = true;
+        } else if (action.id == ButtonPressB) {
+          requestedMode = 12;
+          motionRequested = true;
+        } else if (action.id == ButtonPressC) {
+          requestedMode = 13;
+          motionRequested = true;
+        } else if (action.id == ButtonPressD) {
+          requestedMode = 14;
+          motionRequested = true;
+        } else if (action.id == ButtonPressE) {
+          requestedMode = 15;
+          motionRequested = true;
+        } else if (action.id == ButtonOut) {
+        }
+
+        if (action.id == ButtonOut) {
+        }
+        xSemaphoreGive(xSemaphore);
+      }
+    }
+    vTaskDelay(10 / portTICK_PERIOD_MS); // タスクの負荷を下げるためのディレイ
+  }
+}
+
+
+void cleanup() {
+  if (values != nullptr) {
+    free(values);
+  }
+}
+
+
+
+
 void setup() {
   // Serial.begin(115200);
   Serial.begin(19200);
   Serial1.begin(115200, SERIAL_8N1, rs485TX, rs485RX);
   Serial1.flush(); // 受信バッファをクリア
+  
   DYNAMIXEL_SERIAL.begin(1000000);
   dxl.attach(DYNAMIXEL_SERIAL, 1000000);
   SerialBT.begin(bluetoothDeviceName); // Bluetooth device name
   Serial.println("The device started, now you can pair it with bluetooth!");
+
+  // 動的メモリの確保
+  values = (int*)malloc(defaultRecordNumber * 36 * sizeof(int));
+  if (values == nullptr) {
+    Serial.println("Memory allocation failed");
+    while (1); // メモリ確保に失敗した場合は無限ループ
+  }
 
   dxl.addModel<DxlModel::X>(TARGET_ID1);
   dxl.addModel<DxlModel::X>(TARGET_ID2);
@@ -1587,18 +1741,33 @@ void setup() {
   Serial.print("sw01State= " + sw01State);
 
   pinMode(swAudio, INPUT_PULLUP);
+
+  // Disable the watchdog timer for debugging
+  disableCore0WDT();
+  disableCore1WDT();
+
+  // xTaskCreatePinnedToCore(onlySerialCore, "onlySerialCore", 20480, NULL, 1, &thp[0], 0);
+  
+  // Core 0でシリアルコマンド監視タスクを実行
+  xTaskCreatePinnedToCore(
+    serialTask,   // 関数
+    "serialTask", // タスク名
+    8192,        // スタックサイズ
+    NULL,         // パラメータ
+    1,            // 優先度
+    &thp[0],         // タスクハンドル
+    1);           // Core
+  // delay(500); // 余裕を持たせるためのディレイ
+
+  // セマフォの作成
+  xSemaphore = xSemaphoreCreateMutex();
+
+
   Serial.println("setup done");
 }
 
-Action checkAction(String command) {
-    command.trim();
-    for (int i = 0; i < sizeof(ACTIONS); i += 1) {
-        if (command == ACTIONS[i].command) {
-        return ACTIONS[i];
-        }
-    }
-    return ACTIONS[0];
-}
+
+
 
 
 void loop(void) {
@@ -1610,132 +1779,6 @@ void loop(void) {
     mainloop = false;
   }
 
-  if (Serial.available()) {
-    String command = Serial.readStringUntil('\n');
-    Action action = checkAction(command);
-    if (action.id == 0) return;
-
-
-    if (action.id == ArrowPressUp) {
-      if (verticalLevel < pressButtonCount) {
-        verticalLevel++;
-        if (verticalLevel > 0) {
-          dxl.goalPosition(TARGET_ID21, (((verticalHomePos - verticalMinPos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
-        } else if (verticalLevel < 0) {
-          dxl.goalPosition(TARGET_ID21, (((verticalMaxPos - verticalHomePos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
-        } else {
-          dxl.goalPosition(TARGET_ID21, verticalHomePos);
-        }
-      }
-    }
-
-
-    if (action.id == ArrowPressDown) {
-      if (verticalLevel > -pressButtonCount) {
-        verticalLevel--;
-        if (verticalLevel > 0) {
-          dxl.goalPosition(TARGET_ID21, ((verticalHomePos - verticalMinPos) / pressButtonCount) * (-verticalLevel) + verticalHomePos);
-        } else if (verticalLevel < 0) {
-          dxl.goalPosition(TARGET_ID21, ((verticalMaxPos - verticalHomePos) / pressButtonCount) * (-verticalLevel) + verticalHomePos);
-        } else {
-          dxl.goalPosition(TARGET_ID21, verticalHomePos);
-        }
-      }
-    }
-
-
-    if (action.id == ArrowPressRight) {
-      if (horizontalLevel < pressButtonCount) {
-        horizontalLevel++;
-        if (horizontalLevel > 0) {
-          dxl.goalPosition(TARGET_ID23, ((horizontalHomePos - horizontalMinPos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
-        } else if (horizontalLevel < 0) {
-          dxl.goalPosition(TARGET_ID23, ((horizontalMaxPos - horizontalHomePos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
-        } else {
-          dxl.goalPosition(TARGET_ID23, horizontalHomePos);
-        }
-      }
-    }
-
-
-    if (action.id == ArrowPressLeft) {
-      if (horizontalLevel > -pressButtonCount) {
-        horizontalLevel--;
-        if (horizontalLevel > 0) {
-          dxl.goalPosition(TARGET_ID23, ((horizontalHomePos - horizontalMinPos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
-        } else if (horizontalLevel < 0) {
-          dxl.goalPosition(TARGET_ID23, ((horizontalMaxPos - horizontalHomePos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
-        } else {
-          dxl.goalPosition(TARGET_ID23, horizontalHomePos);
-        }
-      }
-    }
-
-
-    if (action.id == ArrowOut) {
-      
-    }
-
-
-    if (action.id == ArrowPressCenter) {
-      if (verticalLevel > pressButtonCount - 2 || verticalLevel < -pressButtonCount + 2){
-        headProfileVelocity = 1500;
-        dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
-      }
-      if (horizontalLevel > pressButtonCount - 2 || horizontalLevel < -pressButtonCount + 2){
-        headProfileVelocity = 1500;
-        dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
-      }
-      
-      dxl.goalPosition(TARGET_ID21, verticalHomePos);
-      dxl.goalPosition(TARGET_ID23, horizontalHomePos);
-      verticalLevel = 0;
-      horizontalLevel = 0;
-      headProfileVelocity = 1500;
-      dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
-      dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
-    }
-
-
-
-    if (action.id == ButtonPressA) { //
-        // Serial.println("A-button");
-        mode = 11;
-        playMotion();
-    }
-
-
-    if (action.id == ButtonPressB) { //
-      // Serial.println("B-button");
-      mode = 12;
-      playMotion();
-    }
-
-
-    if (action.id == ButtonPressC) { //
-      // Serial.println("C-button");
-      mode = 13;
-      playMotion();
-    }
-
-
-    if (action.id == ButtonPressD) { //
-      // Serial.println("D-button");
-      mode = 14;
-      playMotion();
-    }
-
-    if (action.id == ButtonPressE) { //
-      // Serial.println("E-button");
-      mode = 15;
-      playMotion();
-    }
-
-
-    if (action.id == ButtonOut) {
-    }
-  }
-
   uint16_t t_x = 0, t_y = 0; // To store the touch coordinates
 
   // Pressed will be set true is there is a valid touch on the screen
@@ -1743,6 +1786,7 @@ void loop(void) {
 
   // / Check if any key coordinate boxes contain the touch coordinates
   for (uint8_t b = 0; b < 12; b++) {
+  // for (uint8_t b = 0; b < 9; b++) {
     if (pressed && key[b].contains(t_x, t_y)) {
       key[b].press(true);  // tell the button it is pressed
       drawKeypad();
@@ -1754,6 +1798,7 @@ void loop(void) {
   // Check if any key has changed state
   //　b=0を一番左上のRUNとし、ボタンが押されたらそれを実行する。
   for (uint8_t b = 0; b < 12; b++) {
+  // for (uint8_t b = 0; b < 9; b++) {
 
     if (b < 3) tft.setFreeFont(LABEL1_FONT);
     else tft.setFreeFont(LABEL2_FONT);
@@ -1814,6 +1859,14 @@ void loop(void) {
   int swAudioState = digitalRead(swAudio);
   if (swAudioState == 0) {
     audioMode = 1;
+  }
+
+  // シリアルタスクからのモーション再生要求を処理
+  if (motionRequested) {
+    mode = requestedMode;
+    playMotion();
+    motionRequested = false;
+    mode = 10;
   }
 
 }
