@@ -96,7 +96,7 @@ Action ACTIONS[] = {
 };
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.14.0"
+#define VERSION_NUMBER  "ver. 0.14.1"
 // -----------------------------------
 
 String bluetoothDeviceName = "YushunArm";
@@ -1481,64 +1481,6 @@ Action checkAction(String command) {
 }
 
 
-void onlySerialCore(void *args) {
-  Serial.println("MultiCore running");
-  while (true) {
-    if (Serial.available()) {
-      String command = Serial.readStringUntil('\n');
-      Action action = checkAction(command);
-      if (action.id == 0) continue;
-
-      if (action.id == ArrowPressUp) {
-        if (verticalLevel < pressButtonCount) {
-          verticalLevel++;
-          dxl.goalPosition(TARGET_ID21, (((verticalHomePos - verticalMinPos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
-        }
-      } else if (action.id == ArrowPressDown) {
-        if (verticalLevel > -pressButtonCount) {
-          verticalLevel--;
-          dxl.goalPosition(TARGET_ID21, (((verticalMaxPos - verticalHomePos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
-        }
-      } else if (action.id == ArrowPressRight) {
-        if (horizontalLevel < pressButtonCount) {
-          horizontalLevel++;
-          dxl.goalPosition(TARGET_ID23, ((horizontalHomePos - horizontalMinPos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
-        }
-      } else if (action.id == ArrowPressLeft) {
-        if (horizontalLevel > -pressButtonCount) {
-          horizontalLevel--;
-          dxl.goalPosition(TARGET_ID23, ((horizontalMaxPos - horizontalHomePos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
-        }
-      } else if (action.id == ArrowPressCenter) {
-        dxl.goalPosition(TARGET_ID21, verticalHomePos);
-        dxl.goalPosition(TARGET_ID23, horizontalHomePos);
-        verticalLevel = 0;
-        horizontalLevel = 0;
-        dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
-        dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
-      } else if (action.id == ButtonPressA) {
-        mode = 11;
-        playMotion();
-      } else if (action.id == ButtonPressB) {
-        mode = 12;
-        playMotion();
-      } else if (action.id == ButtonPressC) {
-        mode = 13;
-        playMotion();
-      } else if (action.id == ButtonPressD) {
-        mode = 14;
-        playMotion();
-      } else if (action.id == ButtonPressE) {
-        mode = 15;
-        playMotion();
-      }
-
-      // Delay to prevent WDT reset
-      vTaskDelay(10 / portTICK_PERIOD_MS);
-    }
-  }
-}
-
 void serialTask(void * parameter) {
   while (true) {
     if (Serial.available()) {
@@ -1591,6 +1533,20 @@ void serialTask(void * parameter) {
           requestedMode = 15;
           motionRequested = true;
         } else if (action.id == ButtonOut) {
+        }
+
+        if (action.id == Start) {
+          dxl.torqueEnable(TARGET_ID21, true);
+          dxl.torqueEnable(TARGET_ID23, true);
+          dxl.torqueEnable(TARGET_ID24, true);
+
+          headProfileVelocity = 3000;
+          dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
+          dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
+          headProfileVelocity = 1500;
+
+          dxl.goalPosition(TARGET_ID21, verticalHomePos);
+          dxl.goalPosition(TARGET_ID23, horizontalHomePos);
         }
 
         if (action.id == ButtonOut) {
@@ -1670,21 +1626,9 @@ void setup() {
   dxl.torqueEnable(TARGET_ID17, false);
   dxl.torqueEnable(TARGET_ID18, false);
 
-  // dxl.torqueEnable(TARGET_ID21, false);
-  // dxl.torqueEnable(TARGET_ID23, false);
-  // dxl.torqueEnable(TARGET_ID24, false);
-
-  dxl.torqueEnable(TARGET_ID21, true);
-  dxl.torqueEnable(TARGET_ID23, true);
-  dxl.torqueEnable(TARGET_ID24, true);
-
-  headProfileVelocity = 2000;
-  dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
-  dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
-  headProfileVelocity = 1500;
-
-  dxl.goalPosition(TARGET_ID21, verticalHomePos);
-  dxl.goalPosition(TARGET_ID23, horizontalHomePos);
+  dxl.torqueEnable(TARGET_ID21, false);
+  dxl.torqueEnable(TARGET_ID23, false);
+  dxl.torqueEnable(TARGET_ID24, false);
 
   Pgain_on();
 
