@@ -54,6 +54,20 @@ static const int ButtonPressX = 31;
 static const int ButtonPressY = 32;
 static const int ButtonPressZ = 33;
 static const int ButtonOut = 34;
+static const int HeadArrowPressUp = 35;
+static const int HeadArrowPressDown = 36;
+static const int HeadArrowPressLeft = 37;
+static const int HeadArrowPressRight = 38;
+static const int HeadArrowPressCenter = 39;
+static const int HeadArrowOut = 40;
+static const int MoveArrowPressUp = 41;
+static const int MoveArrowPressDown = 42;
+static const int MoveArrowPressLeft = 43;
+static const int MoveArrowPressRight = 44;
+static const int MoveArrowPressCenter = 45;
+static const int MoveArrowOut = 46;
+static const int End = 47;
+
 struct Action {
     int id;
     String command;
@@ -94,10 +108,23 @@ Action ACTIONS[] = {
     { ButtonPressY, "BUTTON_PRESS_Y" },
     { ButtonPressZ, "BUTTON_PRESS_Z" },
     { ButtonOut, "BUTTON_OUT" },
+    { HeadArrowPressUp, "HEAD_ARROW_PRESS_UP"},
+    { HeadArrowPressDown, "HEAD_ARROW_PRESS_DOWN"},
+    { HeadArrowPressLeft, "HEAD_ARROW_PRESS_LEFT"},
+    { HeadArrowPressRight, "HEAD_ARROW_PRESS_RIGHT"},
+    { HeadArrowPressCenter, "HEAD_ARROW_PRESS_CENTER"},
+    { HeadArrowOut, "HEAD_ARROW_OUT"},
+    { MoveArrowPressUp, "MOVE_ARROW_PRESS_UP"},
+    { MoveArrowPressDown, "MOVE_ARROW_PRESS_DOWN"},
+    { MoveArrowPressLeft, "MOVE_ARROW_PRESS_LEFT"},
+    { MoveArrowPressRight, "MOVE_ARROW_PRESS_RIGHT"},
+    { MoveArrowPressCenter, "MOVE_ARROW_PRESS_CENTER"},
+    { MoveArrowOut, "MOVE_ARROW_OUT"},
+    { End, "END" }
 };
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.14.3"
+#define VERSION_NUMBER  "ver. 0.14.4"
 // -----------------------------------
 
 String bluetoothDeviceName = "YushunArm";
@@ -1555,6 +1582,8 @@ void serialTask(void * parameter) {
         }
 
         if (action.id == Start) {
+          verticalLevel = 0;
+          horizontalLevel = 0;
           dxl.torqueEnable(TARGET_ID21, true);
           dxl.torqueEnable(TARGET_ID23, true);
           dxl.torqueEnable(TARGET_ID24, true);
@@ -1568,8 +1597,80 @@ void serialTask(void * parameter) {
           dxl.goalPosition(TARGET_ID23, horizontalHomePos);
         }
 
-        if (action.id == ButtonOut) {
+        if (action.id == End) {
+          headProfileVelocity = 3000;
+          dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
+          dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
+          headProfileVelocity = 1500;
+
+          dxl.goalPosition(TARGET_ID21, verticalMaxPos);
+          dxl.goalPosition(TARGET_ID23, horizontalHomePos);
+          delay(3000);
+          dxl.torqueEnable(TARGET_ID21, false);
+          dxl.torqueEnable(TARGET_ID23, false);
+          dxl.torqueEnable(TARGET_ID24, false);
         }
+
+        if (action.id == HeadArrowPressUp) {
+          Serial.println("頭部操作キー上を押下時に送信");
+          if (verticalLevel < pressButtonCount) {
+            verticalLevel++;
+            dxl.goalPosition(TARGET_ID21, (((verticalHomePos - verticalMinPos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
+          }
+        }
+        if (action.id == HeadArrowPressDown) {
+          Serial.println("頭部操作キー下を押下時に送信");
+          if (verticalLevel > -pressButtonCount) {
+            verticalLevel--;
+            dxl.goalPosition(TARGET_ID21, (((verticalMaxPos - verticalHomePos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
+          }
+        }
+        if (action.id == HeadArrowPressRight) {
+          Serial.println("頭部操作キー右を押下時に送信");
+          if (horizontalLevel < pressButtonCount) {
+            horizontalLevel++;
+            dxl.goalPosition(TARGET_ID23, ((horizontalHomePos - horizontalMinPos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
+          }
+        }
+        if (action.id == HeadArrowPressLeft) {
+          Serial.println("頭部操作キー左を押下時に送信");
+          if (horizontalLevel > -pressButtonCount) {
+            horizontalLevel--;
+            dxl.goalPosition(TARGET_ID23, ((horizontalMaxPos - horizontalHomePos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
+          }
+        }
+        if (action.id == HeadArrowPressCenter) {
+          Serial.println("頭部操作キー中央を押下時に送信");
+          dxl.goalPosition(TARGET_ID21, verticalHomePos);
+          dxl.goalPosition(TARGET_ID23, horizontalHomePos);
+          verticalLevel = 0;
+          horizontalLevel = 0;
+          dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
+          dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
+        }
+        if (action.id == HeadArrowOut) {
+          Serial.println("頭部操作キーの押下が終了した時に送信");
+        }
+
+
+        if (action.id == MoveArrowPressUp) {
+          Serial.println("移動キー上を押下時に送信");
+        }
+        if (action.id == MoveArrowPressDown) {
+          Serial.println("移動キ下を押下時に送信");
+        }
+        if (action.id == MoveArrowPressRight) {
+          Serial.println("移動キー右を押下時に送信");
+        }
+        if (action.id == MoveArrowPressLeft) {
+          Serial.println("移動キー左を押下時に送信");
+        }
+        if (action.id == MoveArrowOut) {
+          Serial.println("移動キーの押下が終了した時に送信");
+        }
+
+
+
         xSemaphoreGive(xSemaphore);
       }
     }
