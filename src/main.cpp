@@ -5,14 +5,14 @@
 
 #include <SPIFFS.h>
 #include "freertos/semphr.h"
-#include "BluetoothSerial.h"
-#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
-#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
-#endif
+// #include "BluetoothSerial.h"
+// #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+// #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+// #endif
 
 String numberBuffer1 = "test";
 
-BluetoothSerial SerialBT;
+// BluetoothSerial SerialBT;
 
 SemaphoreHandle_t xSemaphore;
 
@@ -124,7 +124,7 @@ Action ACTIONS[] = {
 };
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.14.4"
+#define VERSION_NUMBER  "ver. 0.14.5"
 // -----------------------------------
 
 String bluetoothDeviceName = "YushunArm";
@@ -996,15 +996,21 @@ void playMotion() {
 
   TIMERDISPreset();
 
-  if (mode == 1 || mode == 11) {
+  if (!SPIFFS.begin()) {
+    Serial.println("SPIFFS Mount Failed");
+    SPIFFS.end();  // SPIFFSの使用終了
+    return;
+  }
+
+  if (mode == 11) {
     file = SPIFFS.open("/test1.txt");
-  } else if (mode == 2 || mode == 12) {
+  } else if (mode == 12) {
     file = SPIFFS.open("/test2.txt");
-  } else if (mode == 3 || mode == 13) {
+  } else if (mode == 13) {
     file = SPIFFS.open("/test3.txt");
-  } else if (mode == 4 || mode == 14) {
+  } else if (mode == 14) {
     file = SPIFFS.open("/test4.txt");
-  } else if (mode == 5 || mode == 15) {
+  } else if (mode == 15) {
     file = SPIFFS.open("/test5.txt");
   } else {
     Serial.println("Invalid mode");
@@ -1024,20 +1030,24 @@ void playMotion() {
       char c = file.read();
       if (c == ',' || c == '\n' || c == -1) {
         buffer[pos] = '\0';
-        values[index++] = atoi(buffer);
+        if (index < defaultRecordNumber * 36) { // 範囲チェック
+            values[index++] = atoi(buffer);
+        }
         pos = 0;
-
         if (c == '\n' || c == -1) {
-          break;
+            break;
         }
       } else {
-        buffer[pos++] = c;
+        if (pos < sizeof(buffer) - 1) { // バッファオーバーフロー防止
+            buffer[pos++] = c;
+        }
       }
     }
-
     vTaskDelay(1 / portTICK_PERIOD_MS);
   }
   file.close();
+  SPIFFS.end();  // SPIFFSの使用終了
+
 
   totalRecordTime = values[index - 2];
 
@@ -1365,9 +1375,9 @@ void armloop() {
     if (swAudioState == 0) {
       audioMode = 1;
     }
-    if (SerialBT.available()) {
-      receivedChar = SerialBT.read();
-    }
+    // if (SerialBT.available()) {
+    //   receivedChar = SerialBT.read();
+    // }
 
     if (sw01State == 0 && mode == 0) {
       mode = 1;
@@ -1696,8 +1706,8 @@ void setup() {
   
   DYNAMIXEL_SERIAL.begin(1000000);
   dxl.attach(DYNAMIXEL_SERIAL, 1000000);
-  SerialBT.begin(bluetoothDeviceName);
-  Serial.println("The device started, now you can pair it with bluetooth!");
+  // SerialBT.begin(bluetoothDeviceName);
+  // Serial.println("The device started, now you can pair it with bluetooth!");
 
   // 動的メモリの確保
   values = (int*)malloc(defaultRecordNumber * 36 * sizeof(int));
@@ -1810,18 +1820,25 @@ void setup() {
 
   // xTaskCreatePinnedToCore(onlySerialCore, "onlySerialCore", 20480, NULL, 1, &thp[0], 0);
   
-  // Core 0でシリアルコマンド監視タスクを実行
-  xTaskCreatePinnedToCore(
-    serialTask,   // 関数
-    "serialTask", // タスク名
-    8192,        // スタックサイズ
-    NULL,         // パラメータ
-    1,            // 優先度
-    &thp[0],         // タスクハンドル
-    1);           // Core
+  // // Core 0でシリアルコマンド監視タスクを実行
+  // xTaskCreatePinnedToCore(
+  //   serialTask,   // 関数
+  //   "serialTask", // タスク名
+  //   8192,        // スタックサイズ
+  //   NULL,         // パラメータ
+  //   1,            // 優先度
+  //   &thp[0],         // タスクハンドル
+  //   1);           // Core
 
   // セマフォの作成
   xSemaphore = xSemaphoreCreateMutex();
+
+  // SPIFFSの初期化とマウント
+  if (!SPIFFS.begin(true)) {
+    Serial.println("An error has occurred while mounting SPIFFS");
+  } else {
+    Serial.println("SPIFFS mounted successfully");
+  }
 
 
   Serial.println("setup done");
@@ -1839,6 +1856,211 @@ void loop(void) {
     digitalWrite(pin2, HIGH);
     mainloop = false;
   }
+
+
+  if (Serial.available()) {
+      String command = Serial.readStringUntil('\n');
+      Action action = checkAction(command);
+      if (action.id == 0) return;
+
+
+      if (xSemaphoreTake(xSemaphore, (TickType_t)10) == pdTRUE) {
+        if (action.id == ArrowPressUp) {
+          if (verticalLevel < pressButtonCount) {
+            verticalLevel++;
+            dxl.goalPosition(TARGET_ID21, (((verticalHomePos - verticalMinPos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
+          }
+        } else if (action.id == ArrowPressDown) {
+          if (verticalLevel > -pressButtonCount) {
+            verticalLevel--;
+            dxl.goalPosition(TARGET_ID21, (((verticalMaxPos - verticalHomePos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
+          }
+        } else if (action.id == ArrowPressRight) {
+          if (horizontalLevel < pressButtonCount) {
+            horizontalLevel++;
+            dxl.goalPosition(TARGET_ID23, ((horizontalHomePos - horizontalMinPos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
+          }
+        } else if (action.id == ArrowPressLeft) {
+          if (horizontalLevel > -pressButtonCount) {
+            horizontalLevel--;
+            dxl.goalPosition(TARGET_ID23, ((horizontalMaxPos - horizontalHomePos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
+          }
+        } else if (action.id == ArrowPressCenter) {
+          dxl.goalPosition(TARGET_ID21, verticalHomePos);
+          dxl.goalPosition(TARGET_ID23, horizontalHomePos);
+          verticalLevel = 0;
+          horizontalLevel = 0;
+          dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
+          dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
+        } else if (action.id == ButtonPressA) {
+          requestedMode = 11;
+          motionRequested = true;
+        } else if (action.id == ButtonPressB) {
+          requestedMode = 12;
+          motionRequested = true;
+        } else if (action.id == ButtonPressC) {
+          requestedMode = 13;
+          motionRequested = true;
+        } else if (action.id == ButtonPressD) {
+          requestedMode = 14;
+          motionRequested = true;
+        } else if (action.id == ButtonPressE) {
+          requestedMode = 15;
+          motionRequested = true;
+        } else if (action.id == ButtonPressY) {
+          // // メモリ使用率を表示
+          uint32_t totalHeap = ESP.getHeapSize();
+          uint32_t freeHeap = ESP.getFreeHeap();
+          uint32_t usedHeap = totalHeap - freeHeap;
+          float heapUsage = (float)usedHeap / totalHeap * 100;
+
+          uint32_t totalPsram = ESP.getPsramSize();
+          uint32_t freePsram = ESP.getFreePsram();
+          uint32_t usedPsram = totalPsram - freePsram;
+          float psramUsage = (float)usedPsram / totalPsram * 100;
+
+          Serial.printf("Heap Max: %u bytes\n", totalHeap);
+          Serial.printf("Heap Used: %u bytes\n", usedHeap);
+          Serial.printf("Heap Usage: %.2f%%\n", heapUsage);
+
+          if (totalPsram > 0) {
+            Serial.printf("PSRAM Max: %u bytes\n", totalPsram);
+            Serial.printf("PSRAM Used: %u bytes\n", usedPsram);
+            Serial.printf("PSRAM Usage: %.2f%%\n", psramUsage);
+          } else {
+            Serial.println("PSRAM not available");
+          }
+
+          // SPIFFS information
+          if (SPIFFS.begin()) {
+            uint32_t totalSpiffs = SPIFFS.totalBytes();
+            uint32_t usedSpiffs = SPIFFS.usedBytes();
+            float spiffsUsage = (float)usedSpiffs / totalSpiffs * 100;
+
+            Serial.printf("SPIFFS Max: %u bytes\n", totalSpiffs);
+            Serial.printf("SPIFFS Used: %u bytes\n", usedSpiffs);
+            Serial.printf("SPIFFS Usage: %.2f%%\n", spiffsUsage);
+
+            SPIFFS.end();
+          } else {
+            Serial.println("SPIFFS Mount Failed");
+          }
+
+        } else if (action.id == ButtonPressZ) {
+          // 登録されている1から5のモーションデータを完全に削除
+          String filesToDelete[] = {"/test1.txt", "/test2.txt", "/test3.txt", "/test4.txt", "/test5.txt"};
+          if (SPIFFS.begin()) {
+            for (int i = 0; i < 5; i++) {
+              if (SPIFFS.exists(filesToDelete[i])) {
+                SPIFFS.remove(filesToDelete[i]);
+                Serial.println("Deleted: " + filesToDelete[i]);
+              } else {
+                Serial.println("File not found: " + filesToDelete[i]);
+              }
+            }
+            SPIFFS.end();
+          } else {
+            Serial.println("SPIFFS Mount Failed");
+          }
+
+        }
+        if (action.id == ButtonOut) {
+        }
+
+        if (action.id == Start) {
+          verticalLevel = 0;
+          horizontalLevel = 0;
+          dxl.torqueEnable(TARGET_ID21, true);
+          dxl.torqueEnable(TARGET_ID23, true);
+          dxl.torqueEnable(TARGET_ID24, true);
+
+          headProfileVelocity = 3000;
+          dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
+          dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
+          headProfileVelocity = 1500;
+
+          dxl.goalPosition(TARGET_ID21, verticalHomePos);
+          dxl.goalPosition(TARGET_ID23, horizontalHomePos);
+        }
+
+        if (action.id == End) {
+          headProfileVelocity = 3000;
+          dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
+          dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
+          headProfileVelocity = 1500;
+
+          dxl.goalPosition(TARGET_ID21, verticalMaxPos);
+          dxl.goalPosition(TARGET_ID23, horizontalHomePos);
+          delay(3000);
+          dxl.torqueEnable(TARGET_ID21, false);
+          dxl.torqueEnable(TARGET_ID23, false);
+          dxl.torqueEnable(TARGET_ID24, false);
+        }
+
+        if (action.id == HeadArrowPressUp) {
+          Serial.println("頭部操作キー上を押下時に送信");
+          if (verticalLevel < pressButtonCount) {
+            verticalLevel++;
+            dxl.goalPosition(TARGET_ID21, (((verticalHomePos - verticalMinPos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
+          }
+        }
+        if (action.id == HeadArrowPressDown) {
+          Serial.println("頭部操作キー下を押下時に送信");
+          if (verticalLevel > -pressButtonCount) {
+            verticalLevel--;
+            dxl.goalPosition(TARGET_ID21, (((verticalMaxPos - verticalHomePos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
+          }
+        }
+        if (action.id == HeadArrowPressRight) {
+          Serial.println("頭部操作キー右を押下時に送信");
+          if (horizontalLevel < pressButtonCount) {
+            horizontalLevel++;
+            dxl.goalPosition(TARGET_ID23, ((horizontalHomePos - horizontalMinPos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
+          }
+        }
+        if (action.id == HeadArrowPressLeft) {
+          Serial.println("頭部操作キー左を押下時に送信");
+          if (horizontalLevel > -pressButtonCount) {
+            horizontalLevel--;
+            dxl.goalPosition(TARGET_ID23, ((horizontalMaxPos - horizontalHomePos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
+          }
+        }
+        if (action.id == HeadArrowPressCenter) {
+          Serial.println("頭部操作キー中央を押下時に送信");
+          dxl.goalPosition(TARGET_ID21, verticalHomePos);
+          dxl.goalPosition(TARGET_ID23, horizontalHomePos);
+          verticalLevel = 0;
+          horizontalLevel = 0;
+          dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
+          dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
+        }
+        if (action.id == HeadArrowOut) {
+          Serial.println("頭部操作キーの押下が終了した時に送信");
+        }
+
+
+        if (action.id == MoveArrowPressUp) {
+          Serial.println("移動キー上を押下時に送信");
+        }
+        if (action.id == MoveArrowPressDown) {
+          Serial.println("移動キ下を押下時に送信");
+        }
+        if (action.id == MoveArrowPressRight) {
+          Serial.println("移動キー右を押下時に送信");
+        }
+        if (action.id == MoveArrowPressLeft) {
+          Serial.println("移動キー左を押下時に送信");
+        }
+        if (action.id == MoveArrowOut) {
+          Serial.println("移動キーの押下が終了した時に送信");
+        }
+
+
+
+        xSemaphoreGive(xSemaphore);
+      }
+    }
+    vTaskDelay(10 / portTICK_PERIOD_MS);
 
   uint16_t t_x = 0, t_y = 0;
   bool pressed = tft.getTouch(&t_x, &t_y);
