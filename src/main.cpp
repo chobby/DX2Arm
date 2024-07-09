@@ -124,7 +124,7 @@ Action ACTIONS[] = {
 };
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.14.7"
+#define VERSION_NUMBER  "ver. 0.14.8"
 // -----------------------------------
 
 String bluetoothDeviceName = "YushunArm";
@@ -134,8 +134,8 @@ bool onlyLeftArm = false; //左手のみを使用するかどうか
 bool mainloop = false;
 bool stopRecording = false; //STOPボタンが押されたかどうか
 bool stopPlaying = false; //STOPボタンが押されたかどうか
-int rightHandException = 2400;   //手が全開で脱力する時の閾値
-int leftHandException = 800;   //手が全開で脱力する時の閾値
+const int rightHandException = 2400;   //手が全開で脱力する時の閾値
+const int leftHandException = 800;   //手が全開で脱力する時の閾値
 
 
 #define RXD2 16
@@ -617,6 +617,7 @@ void leftArmRange(int a1, int a2) {
 }
 
 void zero() {
+  rightArmFlag = 1;
   leftArmFlag = 1;
   int de = 1; delay(de);
   targetPos01 = dxl.presentPosition(TARGET_ID1); delay(de);
@@ -2010,7 +2011,7 @@ void setup() {
   Serial.print(ran2);
   Serial.print(",");
   Serial.print(ran4);
-
+  Serial.print(",");
   Serial.print(ran11);
   Serial.print(",");
   Serial.print(ran12);
