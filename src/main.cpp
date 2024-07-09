@@ -97,7 +97,7 @@ Action ACTIONS[] = {
 };
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.14.2"
+#define VERSION_NUMBER  "ver. 0.14.3"
 // -----------------------------------
 
 String bluetoothDeviceName = "YushunArm";
@@ -191,13 +191,13 @@ int leftArmFlag = 0; //フリーの時、落下防止に動きを遅くするフ
 
 int ran1, ran2, ran3, ran4 = 0;
 int ran11, ran12, ran13, ran14 = 0;
-int s08 = 0; //腕の角度
-int s018 = 0; //腕の角度
+int s08 = 0;
+int s018 = 0;
 
 int mode = 10; //1-9:モーション登録, 11-19:モーション再生
-int audioMode = 0; //0:初期値,
+int audioMode = 0;
 
-int moveMode = 0; //0:初期値, 1:前進, 2:後進, 3:右回転, 4:左回転
+int moveMode = 0;
 
 int O_time = 0;
 const int O_t = 20;
@@ -248,24 +248,21 @@ int t = 0;
 
 #include "FS.h"
 #include <SPI.h>
-#include <TFT_eSPI.h>      // Hardware-specific library
-TFT_eSPI tft = TFT_eSPI(); // Invoke custom library
+#include <TFT_eSPI.h>
+TFT_eSPI tft = TFT_eSPI();
 #define CALIBRATION_FILE "/TouchCalData1"
 #define REPEAT_CAL false
-// Keypad start position, key sizes and spacing
-#define KEY_X 40 // Centre of key
+#define KEY_X 40
 #define KEY_Y 90
-#define KEY_W 74 // Width and height
+#define KEY_W 74
 #define KEY_H 45
-#define KEY_SPACING_X 6 // X and Y gap
+#define KEY_SPACING_X 6
 #define KEY_SPACING_Y 5
-#define KEY_TEXTSIZE 0   // Font size multiplier
+#define KEY_TEXTSIZE 0
 
-// Using two fonts since numbers are nice when bold
-#define LABEL1_FONT &FreeSansOblique12pt7b // Key label font 1
-#define LABEL2_FONT &FreeSansBold12pt7b    // Key label font 2
+#define LABEL1_FONT &FreeSansOblique12pt7b
+#define LABEL2_FONT &FreeSansBold12pt7b
 
-// Numeric display box size and location
 #define DISP_X 1
 #define DISP_Y 10
 #define DISP_W 238
@@ -287,17 +284,13 @@ TFT_eSPI tft = TFT_eSPI(); // Invoke custom library
 #define TIMERDISP_TSIZE 3
 #define TIMERDISP_TCOLOR TFT_CYAN
 
-// Number length, buffer for storing it and character index
 #define NUM_LEN 12
 char numberBuffer[NUM_LEN + 1] = "";
 uint8_t numberIndex = 0;
 
-// We have a status line for messages
-#define STATUS_X 120 // Centred on this
+#define STATUS_X 120
 #define STATUS_Y 65
 
-
-// Create 9 keys for the keypad
 char keyLabel[9][5] = {"RUN", "MODE", "REC", "1", "2", "3", "4", "5", "6"};
 uint16_t keyColor[9] = {
   TFT_RED, TFT_DARKGREY, TFT_DARKGREEN,
@@ -305,41 +298,35 @@ uint16_t keyColor[9] = {
   TFT_DARKGREY, TFT_DARKGREY, TFT_DARKGREY,
 };
 
-// Invoke the TFT_eSPI button class and create all the button objects
 TFT_eSPI_Button key[9];
 
 
-
 void DISPprint() {
-  // Update the number display field
-
-  tft.setTextDatum(TL_DATUM);        // Use top left corner as text coord datum
-  tft.setFreeFont(&FreeSans18pt7b);  // Choose a nice font that fits box
-  tft.setTextColor(DISP_TCOLOR);     // Set the font colour
+  tft.setTextDatum(TL_DATUM);
+  tft.setFreeFont(&FreeSans18pt7b);
+  tft.setTextColor(DISP_TCOLOR);
   int xwidth = tft.drawString(numberBuffer1, DISP_X + 4, DISP_Y + 12);
 
-  // Now cover up the rest of the line up by drawing a black rectangle.  No flicker this way
-  // but it will not work with italic or oblique fonts due to character overlap.
   tft.fillRect(DISP_X + 4 + xwidth, DISP_Y + 1, DISP_W - xwidth - 5, DISP_H - 2, TFT_BLACK);
-  delay(10); // UI debouncing
+  delay(10);
 }
 
 void DISPreset() {
-  tft.setTextDatum(TL_DATUM);        // Use top left corner as text coord datum
-  tft.setFreeFont(&FreeSans18pt7b);  // Choose a nice font that fits box
-  tft.setTextColor(DISP_TCOLOR);     // Set the font colour
+  tft.setTextDatum(TL_DATUM);
+  tft.setFreeFont(&FreeSans18pt7b);
+  tft.setTextColor(DISP_TCOLOR);
   numberBuffer1 = "";
   int xwidth = tft.drawString(numberBuffer1, DISP_X + 4, DISP_Y + 12);
   tft.fillRect(DISP_X + 4 + xwidth, DISP_Y + 1, DISP_W - xwidth - 5, DISP_H - 2, TFT_BLACK);
-  delay(10); // UI debouncing
+  delay(10);
 }
 
 void DISPwrite(String A) {
   Serial.print("DISP= ");
   Serial.println(A);
-  tft.setTextDatum(TL_DATUM);        // Use top left corner as text coord datum
-  tft.setFreeFont(&FreeSans18pt7b);  // Choose a nice font that fits box
-  tft.setTextColor(DISP_TCOLOR);     // Set the font colour
+  tft.setTextDatum(TL_DATUM);
+  tft.setFreeFont(&FreeSans18pt7b);
+  tft.setTextColor(DISP_TCOLOR);
   numberBuffer1 = "";
   int xwidth = tft.drawString(numberBuffer1, DISP_X + 4, DISP_Y + 12);
   tft.fillRect(DISP_X + 4 + xwidth, DISP_Y + 1, DISP_W - xwidth - 5, DISP_H - 2, TFT_BLACK);
@@ -350,32 +337,29 @@ void DISPwrite(String A) {
 }
 
 void UNDERDISPprint() {
-  // Update the number display field
-  tft.setTextDatum(TL_DATUM);        // Use top left corner as text coord datum
-  tft.setFreeFont(&FreeSans18pt7b);  // Choose a nice font that fits box
-  tft.setTextColor(UNDERDISP_TCOLOR);     // Set the font colour
+  tft.setTextDatum(TL_DATUM);
+  tft.setFreeFont(&FreeSans18pt7b);
+  tft.setTextColor(UNDERDISP_TCOLOR);
   int xwidth = tft.drawString(numberBuffer1, UNDERDISP_X + 4, UNDERDISP_Y + 12);
 
-  // Now cover up the rest of the line up by drawing a black rectangle.  No flicker this way
-  // but it will not work with italic or oblique fonts due to character overlap.
   tft.fillRect(UNDERDISP_X + 4 + xwidth, UNDERDISP_Y + 1, UNDERDISP_W - xwidth - 5, UNDERDISP_H - 2, TFT_BLACK);
-  delay(10); // UI debouncing
+  delay(10);
 }
 
 void UNDERDISPreset() {
-  tft.setTextDatum(TL_DATUM);        // Use top left corner as text coord datum
-  tft.setFreeFont(&FreeSans18pt7b);  // Choose a nice font that fits box
-  tft.setTextColor(UNDERDISP_TCOLOR);     // Set the font colour
+  tft.setTextDatum(TL_DATUM);
+  tft.setFreeFont(&FreeSans18pt7b);
+  tft.setTextColor(UNDERDISP_TCOLOR);
   numberBuffer1 = "";
   int xwidth = tft.drawString(numberBuffer1, UNDERDISP_X + 4, UNDERDISP_Y + 12);
   tft.fillRect(UNDERDISP_X + 4 + xwidth, UNDERDISP_Y + 1, UNDERDISP_W - xwidth - 5, UNDERDISP_H - 2, TFT_BLACK);
-  delay(10); // UI debouncing
+  delay(10);
 }
 
 void UNDERDISPwrite(String A) {
-  tft.setTextDatum(TL_DATUM);        // Use top left corner as text coord datum
-  tft.setFreeFont(&FreeSans18pt7b);  // Choose a nice font that fits box
-  tft.setTextColor(UNDERDISP_TCOLOR);     // Set the font colour
+  tft.setTextDatum(TL_DATUM);
+  tft.setFreeFont(&FreeSans18pt7b);
+  tft.setTextColor(UNDERDISP_TCOLOR);
   numberBuffer1 = "";
   int xwidth = tft.drawString(numberBuffer1, UNDERDISP_X + 4, UNDERDISP_Y + 12);
   tft.fillRect(UNDERDISP_X + 4 + xwidth, UNDERDISP_Y + 1, UNDERDISP_W - xwidth - 5, UNDERDISP_H - 2, TFT_BLACK);
@@ -386,20 +370,17 @@ void UNDERDISPwrite(String A) {
 }
 
 void TIMERDISPprint() {
-  // Update the number display field
-  tft.setTextDatum(TL_DATUM);        // Use top left corner as text coord datum
-  tft.setFreeFont(&FreeSans18pt7b);  // Choose a nice font that fits box
-  tft.setTextColor(UNDERDISP_TCOLOR);     // Set the font colour
+  tft.setTextDatum(TL_DATUM);
+  tft.setFreeFont(&FreeSans18pt7b);
+  tft.setTextColor(UNDERDISP_TCOLOR);
   int xwidth = tft.drawString(numberBuffer1, UNDERDISP_X + 4, UNDERDISP_Y + 12);
 
-  // Now cover up the rest of the line up by drawing a black rectangle.  No flicker this way
-  // but it will not work with italic or oblique fonts due to character overlap.
   tft.fillRect(UNDERDISP_X + 4 + xwidth, UNDERDISP_Y + 1, UNDERDISP_W - xwidth - 5, UNDERDISP_H - 2, TFT_BLACK);
-  delay(10); // UI debouncing
+  delay(10);
 }
 
 void TIMERDISPreset() {
-  tft.fillRect(TIMERDISP_X, TIMERDISP_Y, TIMERDISP_W, TIMERDISP_H, TFT_BLACK);  // Draw number display area and frame
+  tft.fillRect(TIMERDISP_X, TIMERDISP_Y, TIMERDISP_W, TIMERDISP_H, TFT_BLACK);
   tft.drawRect(TIMERDISP_X, TIMERDISP_Y, TIMERDISP_W, TIMERDISP_H, TFT_WHITE);
 }
 
@@ -414,18 +395,15 @@ void touch_calibrate() {
   uint16_t calData[5];
   uint8_t calDataOK = 0;
 
-  // check file system exists
   if (!SPIFFS.begin()) {
     Serial.println("formatting file system");
     SPIFFS.format();
     SPIFFS.begin();
   }
 
-  // check if calibration file exists and size is correct
   if (SPIFFS.exists(CALIBRATION_FILE)) {
     if (REPEAT_CAL)
     {
-      // Delete if we want to re-calibrate
       SPIFFS.remove(CALIBRATION_FILE);
     }
     else
@@ -440,10 +418,8 @@ void touch_calibrate() {
   }
 
   if (calDataOK && !REPEAT_CAL) {
-    // calibration data valid
     tft.setTouch(calData);
   } else {
-    // data not valid so recalibrate
     tft.fillScreen(TFT_BLACK);
     tft.setCursor(20, 0);
     tft.setTextFont(2);
@@ -465,7 +441,6 @@ void touch_calibrate() {
     tft.setTextColor(TFT_GREEN, TFT_BLACK);
     tft.println("Calibration complete!");
 
-    // store data
     File f = SPIFFS.open(CALIBRATION_FILE, "w");
     if (f) {
       f.write((const unsigned char *)calData, 14);
@@ -474,23 +449,17 @@ void touch_calibrate() {
   }
 }
 
-//------------------------------------------------------------------------------------------
-
-// Print something in the mini status bar
 void status(const char *msg) {
 
   tft.setTextPadding(240);
-  //tft.setCursor(STATUS_X, STATUS_Y);
   tft.setTextColor(TFT_WHITE, TFT_DARKGREY);
   tft.setTextFont(0);
   tft.setTextDatum(TC_DATUM);
   tft.setTextSize(1);
   tft.drawString(msg, STATUS_X, STATUS_Y);
 }
-//------------------------------------------------------------------------------------------
 
 void drawKeypad() {
-  // Draw the keys
   for (uint8_t row = 0; row < 3; row++) {
     for (uint8_t col = 0; col < 3; col++) {
       uint8_t b = col + row * 3;
@@ -498,7 +467,6 @@ void drawKeypad() {
       if (b < 3) tft.setFreeFont(LABEL1_FONT);
       else tft.setFreeFont(LABEL2_FONT);
 
-      // モードが1から9（録画モード）なら「MODE」を「STOP」に変更
       if (b == 1 && ((0 < mode  && mode < 10) || (10 < mode  && mode < 20))) {
         keyLabel[b][0] = 'S';
         keyLabel[b][1] = 'T';
@@ -621,8 +589,7 @@ void leftArmRange(int a1, int a2) {
   if (a1 < a2 + r && a2 - r < a1)leftArmFlag = leftArmFlag + 1;
 }
 
-void zero() { //フリーの時、落下防止に動きを遅くするフラグをONにする
-  rightArmFlag = 1;
+void zero() {
   leftArmFlag = 1;
   int de = 1; delay(de);
   targetPos01 = dxl.presentPosition(TARGET_ID1); delay(de);
@@ -650,7 +617,7 @@ void zero() { //フリーの時、落下防止に動きを遅くするフラグ�
   if (leftArmFlag == 4)leftArmFlag = 0;
 }
 
-void slow() { //条件がONの時、スローにする。ただし腕が全開の時は例外とする
+void slow() {
 
   if (rightArmFlag > 0 && s08 > rightHandException) {
     dxl.positionPGain(TARGET_ID1, 1);
@@ -778,7 +745,7 @@ void recordMotion() {
 
   TIMERDISPreset();
 
-  if (mode < 10) {//writerはmodeが1～9
+  if (mode < 10) {
     drawKeypad();
     if (mode == 1) {
       // ファイルの作成とデータの書き込み
@@ -821,8 +788,6 @@ void recordMotion() {
       }
     }
 
-    //***********************************************
-
     //全脱力
     dxl.torqueEnable(TARGET_ID1, false);
     dxl.torqueEnable(TARGET_ID2, false);
@@ -846,7 +811,7 @@ void recordMotion() {
 
     for (int i = 0; i < defaultRecordNumber; i++) {
       // STOPボタンが押されたかどうかをチェック
-      uint16_t t_x = 0, t_y = 0; // To store the touch coordinates
+      uint16_t t_x = 0, t_y = 0;
       bool pressed = tft.getTouch(&t_x, &t_y);
       if (pressed && key[1].contains(t_x, t_y)) {
         stopRecording = true;
@@ -951,7 +916,7 @@ void recordMotion() {
 
       if (stopRecording) { // STOPボタンが押されたかどうかをチェック
         for (int i = 3; i < 9; i++) {
-          keyColor[i] = TFT_RED; // 数字ボタンを赤色に変更
+          keyColor[i] = TFT_RED;
         }
         endRecordTime = millis();
         totalRecordTime = endRecordTime - startRecordTime;
@@ -981,7 +946,7 @@ void recordMotion() {
       }
     }
 
-    if (!stopRecording) { // STOPボタンが押されていない場合
+    if (!stopRecording) {
       DISPwrite("COMPLETE");
       Serial.println("COMPLETE");
 
@@ -997,6 +962,7 @@ void recordMotion() {
 
 void playMotion() {
   // ファイルの読み取り
+
   DISPwrite("reader");
   Serial.print("mode = " + String(mode));
   drawKeypad();
@@ -1030,27 +996,24 @@ void playMotion() {
     while (true) {
       char c = file.read();
       if (c == ',' || c == '\n' || c == -1) {
-        buffer[pos] = '\0'; // 終端文字を追加
-        values[index++] = atoi(buffer); // char配列を整数に変換して配列に格納
-        pos = 0; // バッファの位置をリセット
+        buffer[pos] = '\0';
+        values[index++] = atoi(buffer);
+        pos = 0;
 
         if (c == '\n' || c == -1) {
-          break; // 行の終わりまたはファイルの終わり
+          break;
         }
       } else {
-        buffer[pos++] = c; // バッファに文字を追加
+        buffer[pos++] = c;
       }
     }
 
-    // WDTリセットのための遅延
     vTaskDelay(1 / portTICK_PERIOD_MS);
   }
   file.close();
 
-  // 総記録時間を取得
-  totalRecordTime = values[index - 2]; // 総記録時間は配列の最後から2番目に格納されています
+  totalRecordTime = values[index - 2];
 
-  // playTimeを画面に表示
   DISPwrite("Play Time: " + String(totalRecordTime) + " ms");
   Serial.println("Play Time: " + String(totalRecordTime) + " ms");
 
@@ -1084,14 +1047,14 @@ void playMotion() {
     // for (int i = 0; i < playMotionTime; i++) {
     for (int i = 0; i < playMotionTime && i * number + 15 < defaultRecordNumber * 36; i++) {
       // STOPボタンが押されたかどうかをチェック
-      uint16_t t_x = 0, t_y = 0; // To store the touch coordinates
+      uint16_t t_x = 0, t_y = 0;
       bool pressed = tft.getTouch(&t_x, &t_y);
       if (pressed && key[1].contains(t_x, t_y)) {
         stopPlaying = true;
       }
       if (stopPlaying) { // STOPボタンが押されたかどうかをチェック
         for (int j = 3; j < 9; j++) {
-          keyColor[j] = TFT_DARKGREEN; // 数字ボタンを緑色に変更
+          keyColor[j] = TFT_DARKGREEN;
         }
         drawKeypad();
         break;
@@ -1183,8 +1146,6 @@ void playMotion() {
       if (xSemaphoreTake(xSemaphore, (TickType_t)10) == pdTRUE) {
         digitalWrite(pin1, HIGH);
 
-
-        //モータへ送信
         dxl.goalPosition(TARGET_ID1, ss1);
         dxl.goalPosition(TARGET_ID2, ss2);
         dxl.goalPosition(TARGET_ID3, ss3);
@@ -1205,14 +1166,12 @@ void playMotion() {
 
         digitalWrite(pin1, LOW);
         xSemaphoreGive(xSemaphore);
-
       }
 
-      // WDTリセットのための遅延
       vTaskDelay(1 / portTICK_PERIOD_MS);
     }
 
-    if (!stopPlaying) { // STOPボタンが押されていない場合
+    if (!stopPlaying) {
       DISPwrite("COMPLETE");
     } else {
       DISPwrite("STOPPED");
@@ -1237,9 +1196,6 @@ void playMotion() {
 }
 
 
-
-
-//オーディオインタフェースモード
 void audioLoop() {
   
   O_time++;
@@ -1335,7 +1291,7 @@ void armloop() {
   } else { 
     Pgain_on();
     delay(10);
-    // demo();//デモを再生せよ
+    // demo();
     dxl.driveMode(TARGET_ID1, 0x04);
     dxl.driveMode(TARGET_ID2, 0x04);
     dxl.driveMode(TARGET_ID3, 0x04);
@@ -1386,7 +1342,6 @@ void armloop() {
       receivedChar = SerialBT.read();
     }
 
-    //mode=0（RECモードの時）、ボタンを押されたらモーション記録プロセスへ
     if (sw01State == 0 && mode == 0) {
       mode = 1;
       DISPwrite("W_1");
@@ -1418,8 +1373,6 @@ void armloop() {
       mode = 10;
       sw05State = 1;
     }
-
-    //mode=10（RUNモードの時）、ボタンを押されたらモーション再生プロセスへ
 
     if ((sw01State == 0 && mode == 10) || receivedChar == 49) { //ASCII 1
       mode = 11;
@@ -1620,7 +1573,7 @@ void serialTask(void * parameter) {
         xSemaphoreGive(xSemaphore);
       }
     }
-    vTaskDelay(10 / portTICK_PERIOD_MS); // タスクの負荷を下げるためのディレイ
+    vTaskDelay(10 / portTICK_PERIOD_MS);
   }
 }
 
@@ -1642,14 +1595,14 @@ void setup() {
   
   DYNAMIXEL_SERIAL.begin(1000000);
   dxl.attach(DYNAMIXEL_SERIAL, 1000000);
-  SerialBT.begin(bluetoothDeviceName); // Bluetooth device name
+  SerialBT.begin(bluetoothDeviceName);
   Serial.println("The device started, now you can pair it with bluetooth!");
 
   // 動的メモリの確保
   values = (int*)malloc(defaultRecordNumber * 36 * sizeof(int));
   if (values == nullptr) {
     Serial.println("Memory allocation failed");
-    while (1); // メモリ確保に失敗した場合は無限ループ
+    while (1);
   }
 
   dxl.addModel<DxlModel::X>(TARGET_ID1);
@@ -1724,25 +1677,24 @@ void setup() {
   pinMode(pin2, OUTPUT);
   pinMode(pin3, OUTPUT);
 
-  tft.init();  // Initialise the TFT screen
-  tft.setRotation(0);// Set the rotation before we calibrate
-  touch_calibrate();// Calibrate the touch screen and retrieve the scaling factors
-  tft.fillScreen(TFT_BLACK);  // Clear the screen
-  tft.fillRect(0, 0, 240, 320, TFT_DARKGREY);  // Draw keypad background
-  tft.fillRect(DISP_X, DISP_Y, DISP_W, DISP_H, TFT_BLACK);  // Draw number display area and frame
+  tft.init();
+  tft.setRotation(0);
+  touch_calibrate();
+  tft.fillScreen(TFT_BLACK);
+  tft.fillRect(0, 0, 240, 320, TFT_DARKGREY);
+  tft.fillRect(DISP_X, DISP_Y, DISP_W, DISP_H, TFT_BLACK);
   tft.drawRect(DISP_X, DISP_Y, DISP_W, DISP_H, TFT_WHITE);
 
-  tft.fillRect(UNDERDISP_X, UNDERDISP_Y, UNDERDISP_W, UNDERDISP_H, TFT_BLACK);  // Draw number display area and frame
+  tft.fillRect(UNDERDISP_X, UNDERDISP_Y, UNDERDISP_W, UNDERDISP_H, TFT_BLACK);
   tft.drawRect(UNDERDISP_X, UNDERDISP_Y, UNDERDISP_W, UNDERDISP_H, TFT_WHITE);
 
-  tft.fillRect(TIMERDISP_X, TIMERDISP_Y, TIMERDISP_W, TIMERDISP_H, TFT_BLACK);  // Draw number display area and frame
+  tft.fillRect(TIMERDISP_X, TIMERDISP_Y, TIMERDISP_W, TIMERDISP_H, TFT_BLACK);
   tft.drawRect(TIMERDISP_X, TIMERDISP_Y, TIMERDISP_W, TIMERDISP_H, TFT_WHITE);
 
-  drawKeypad();// Draw keypad
+  drawKeypad();
   
-  // Use GLCD font for smaller text
   tft.setTextDatum(TL_DATUM);
-  tft.setTextFont(1);  // Set font to GLCD font
+  tft.setTextFont(1);
   DISPwrite(VERSION_NUMBER);
   delay(2000);
   DISPwrite(bluetoothDeviceName);
@@ -1752,7 +1704,6 @@ void setup() {
 
   pinMode(swAudio, INPUT_PULLUP);
 
-  // Disable the watchdog timer for debugging
   disableCore0WDT();
   disableCore1WDT();
 
@@ -1767,7 +1718,6 @@ void setup() {
     1,            // 優先度
     &thp[0],         // タスクハンドル
     1);           // Core
-  // delay(500); // 余裕を持たせるためのディレイ
 
   // セマフォの作成
   xSemaphore = xSemaphoreCreateMutex();
@@ -1789,24 +1739,17 @@ void loop(void) {
     mainloop = false;
   }
 
-  uint16_t t_x = 0, t_y = 0; // To store the touch coordinates
-
-  // Pressed will be set true is there is a valid touch on the screen
+  uint16_t t_x = 0, t_y = 0;
   bool pressed = tft.getTouch(&t_x, &t_y);
-
-  // / Check if any key coordinate boxes contain the touch coordinates
   for (uint8_t b = 0; b < 12; b++) {
-  // for (uint8_t b = 0; b < 9; b++) {
     if (pressed && key[b].contains(t_x, t_y)) {
-      key[b].press(true);  // tell the button it is pressed
+      key[b].press(true);
       drawKeypad();
     } else {
-      key[b].press(false);  // tell the button it is NOT pressed
+      key[b].press(false);
     }
   }
 
-  // Check if any key has changed state
-  //　b=0を一番左上のRUNとし、ボタンが押されたらそれを実行する。
   for (uint8_t b = 0; b < 12; b++) {
   // for (uint8_t b = 0; b < 9; b++) {
 
@@ -1823,7 +1766,7 @@ void loop(void) {
 
       if (b == 1) {
         if (mode >= 1 && mode <= 9) {
-          stopRecording = true; // STOPボタンが押された場合
+          stopRecording = true;
         } else {
           DISPwrite("MODE b=1");
         }
@@ -1871,7 +1814,6 @@ void loop(void) {
     audioMode = 1;
   }
 
-  // シリアルタスクからのモーション再生要求を処理
   if (motionRequested) {
     mode = requestedMode;
     playMotion();
