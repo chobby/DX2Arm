@@ -124,7 +124,7 @@ Action ACTIONS[] = {
 };
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.14.5"
+#define VERSION_NUMBER  "ver. 0.14.6"
 // -----------------------------------
 
 String bluetoothDeviceName = "YushunArm";
@@ -771,6 +771,12 @@ void recordMotion() {
   DISPprint();
 
   TIMERDISPreset();
+
+  if (!SPIFFS.begin()) {
+    Serial.println("SPIFFS Mount Failed");
+    SPIFFS.end();  // SPIFFSの使用終了
+    return;
+  }
 
   if (mode < 10) {
     drawKeypad();
