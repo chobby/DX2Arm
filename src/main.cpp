@@ -5,14 +5,8 @@
 
 #include <SPIFFS.h>
 #include "freertos/semphr.h"
-// #include "BluetoothSerial.h"
-// #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
-// #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
-// #endif
 
 String numberBuffer1 = "test";
-
-// BluetoothSerial SerialBT;
 
 SemaphoreHandle_t xSemaphore;
 
@@ -124,7 +118,7 @@ Action ACTIONS[] = {
 };
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.14.8"
+#define VERSION_NUMBER  "ver. 0.14.9"
 // -----------------------------------
 
 String bluetoothDeviceName = "YushunArm";
@@ -154,11 +148,9 @@ const int pin3 = 27;
 
 Dynamixel dxl(RXD2, TXD2);
 
-const int defaultRecordNumber = 600;  //デフォルトの録画する数
-int number = 17; //←ここの数字はID+1とする 呼び出す数
+const int defaultRecordNumber = 600;
+int number = 17;
 int* values = nullptr;  //動的メモリ用のポインタ
-// int values[defaultRecordNumber * 18 ]; //←ここの数字はID＋１とする
-// char buffer[24]; // 数値の一時的な保持のためのバッファ
 char buffer[16]; // 数値の一時的な保持のためのバッファ
 
 int startRecordTime = 0;
@@ -174,8 +166,8 @@ const int timer = defaultRecordNumber;
 int TIMERLENGTH = 0;
 
 
-int horizontalLevel = 0;  //0:真ん中, 1:左Level.1, 2:左Level.2, 3:左Level.3, -1:右Level.1, -2:右Level.2, -3:右Level.3
-int verticalLevel = 0;  //0:真ん中, 1:上Level.1, 2:上Level.2, 3:上Level.3, -1:下Level.1, -2:下Level.2, -3:下Level.3
+int horizontalLevel = 0;  //0:中央, 1:左Level.1, 2:左Level.2, 3:左Level.3, -1:右Level.1, -2:右Level.2, -3:右Level.3
+int verticalLevel = 0;  //0:中央, 1:上Level.1, 2:上Level.2, 3:上Level.3, -1:下Level.1, -2:下Level.2, -3:下Level.3
 
 int currentHorizontalPos = 0;
 int currentVerticalPos = 0;
@@ -864,31 +856,21 @@ void checkSerial(){
         }
 
       } else if (action.id == ButtonPressZ) {
-        // // .txtファイルを全て削除
-        // File root = SPIFFS.open("/");
-        // File file = root.openNextFile();
-        // while (file) {
-        //   if (String(file.name()).endsWith(".txt")) {
-        //     SPIFFS.remove(file.name());
-        //   }
-        //   file = root.openNextFile();
-        // }
-        // Serial.println("All .txt files deleted.");
-
-        // Delete all files in SPIFFS
+        // 登録されている1から5のモーションデータを完全に削除
+        String filesToDelete[] = {"/test1.txt", "/test2.txt", "/test3.txt", "/test4.txt", "/test5.txt"};
         if (SPIFFS.begin()) {
-          File root = SPIFFS.open("/");
-          File file = root.openNextFile();
-          while (file) {
-            SPIFFS.remove(file.name());
-            file = root.openNextFile();
+          for (int i = 0; i < 5; i++) {
+            if (SPIFFS.exists(filesToDelete[i])) {
+              SPIFFS.remove(filesToDelete[i]);
+              Serial.println("Deleted: " + filesToDelete[i]);
+            } else {
+              Serial.println("File not found: " + filesToDelete[i]);
+            }
           }
-          Serial.println("All files deleted");
           SPIFFS.end();
         } else {
           Serial.println("SPIFFS Mount Failed");
         }
-
       } else if (action.id == ButtonOut) {
       }
 
@@ -1312,8 +1294,6 @@ void playMotion() {
     dxl.torqueEnable(TARGET_ID17, true);
     dxl.torqueEnable(TARGET_ID18, true);
 
-    // シリアルモニタにデータを表示&モータ実行
-    // for (int i = 0; i < playMotionTime; i++) {
     for (int i = 0; i < playMotionTime && i * number + 15 < defaultRecordNumber * 36; i++) {
 
       // STOPボタンが押されたかどうかをチェック
@@ -1610,9 +1590,6 @@ void armloop() {
     if (swAudioState == 0) {
       audioMode = 1;
     }
-    // if (SerialBT.available()) {
-    //   receivedChar = SerialBT.read();
-    // }
 
     if (sw01State == 0 && mode == 0) {
       mode = 1;
@@ -1790,31 +1767,21 @@ void serialTask(void * parameter) {
           }
 
         } else if (action.id == ButtonPressZ) {
-          // // .txtファイルを全て削除
-          // File root = SPIFFS.open("/");
-          // File file = root.openNextFile();
-          // while (file) {
-          //   if (String(file.name()).endsWith(".txt")) {
-          //     SPIFFS.remove(file.name());
-          //   }
-          //   file = root.openNextFile();
-          // }
-          // Serial.println("All .txt files deleted.");
-
-          // Delete all files in SPIFFS
+          // 登録されている1から5のモーションデータを完全に削除
+          String filesToDelete[] = {"/test1.txt", "/test2.txt", "/test3.txt", "/test4.txt", "/test5.txt"};
           if (SPIFFS.begin()) {
-            File root = SPIFFS.open("/");
-            File file = root.openNextFile();
-            while (file) {
-              SPIFFS.remove(file.name());
-              file = root.openNextFile();
+            for (int i = 0; i < 5; i++) {
+              if (SPIFFS.exists(filesToDelete[i])) {
+                SPIFFS.remove(filesToDelete[i]);
+                Serial.println("Deleted: " + filesToDelete[i]);
+              } else {
+                Serial.println("File not found: " + filesToDelete[i]);
+              }
             }
-            Serial.println("All files deleted");
             SPIFFS.end();
           } else {
             Serial.println("SPIFFS Mount Failed");
           }
-
         } else if (action.id == ButtonOut) {
         }
 
@@ -1940,8 +1907,6 @@ void setup() {
   
   DYNAMIXEL_SERIAL.begin(1000000);
   dxl.attach(DYNAMIXEL_SERIAL, 1000000);
-  // SerialBT.begin(bluetoothDeviceName);
-  // Serial.println("The device started, now you can pair it with bluetooth!");
 
   // 動的メモリの確保
   values = (int*)malloc(defaultRecordNumber * 36 * sizeof(int));
