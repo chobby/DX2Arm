@@ -118,7 +118,7 @@ Action ACTIONS[] = {
 };
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.14.9"
+#define VERSION_NUMBER  "ver. 0.14.10"
 // -----------------------------------
 
 String bluetoothDeviceName = "YushunArm";
@@ -174,7 +174,7 @@ int currentVerticalPos = 0;
 
 const int pressButtonCount = 2;
 
-const int profileVelocity = 150;
+int profileVelocity = 150;
 int headProfileVelocity = 1500;
 
 const int verticalHomePos = 1900; //中央
@@ -1170,7 +1170,7 @@ void recordMotion() {
         Serial.println(0);
         Serial.println("");
         Serial.println("STOP");
-        mode = 0;
+        mode = 10;
         drawKeypad();
         break;
       } else {
@@ -1306,7 +1306,55 @@ void playMotion() {
         for (int j = 3; j < 9; j++) {
           keyColor[j] = TFT_DARKGREEN;
         }
+
+        profileVelocity = 5000;
+        dxl.profileVelocity(TARGET_ID1, profileVelocity);
+        dxl.profileVelocity(TARGET_ID2, profileVelocity);
+        dxl.profileVelocity(TARGET_ID3, profileVelocity);
+        dxl.profileVelocity(TARGET_ID4, profileVelocity);
+        dxl.profileVelocity(TARGET_ID11, profileVelocity);
+        dxl.profileVelocity(TARGET_ID12, profileVelocity);
+        dxl.profileVelocity(TARGET_ID13, profileVelocity);
+        dxl.profileVelocity(TARGET_ID14, profileVelocity);
+
+        dxl.goalPosition(TARGET_ID1, ran1);
+        dxl.goalPosition(TARGET_ID2, ran2);
+        dxl.goalPosition(TARGET_ID3, ran3);
+        dxl.goalPosition(TARGET_ID4, ran4);
+        dxl.goalPosition(TARGET_ID11, ran11);
+        dxl.goalPosition(TARGET_ID12, ran12);
+        dxl.goalPosition(TARGET_ID13, ran13);
+        dxl.goalPosition(TARGET_ID13, ran14);
+
+        delay(6000);
+
+        profileVelocity = 1500;
+        dxl.profileVelocity(TARGET_ID1, profileVelocity);
+        dxl.profileVelocity(TARGET_ID2, profileVelocity);
+        dxl.profileVelocity(TARGET_ID3, profileVelocity);
+        dxl.profileVelocity(TARGET_ID4, profileVelocity);
+        dxl.profileVelocity(TARGET_ID11, profileVelocity);
+        dxl.profileVelocity(TARGET_ID12, profileVelocity);
+        dxl.profileVelocity(TARGET_ID13, profileVelocity);
+        dxl.profileVelocity(TARGET_ID14, profileVelocity);
+
+        ///////////////////////////////////////////////////////////////
+        dxl.torqueEnable(TARGET_ID3, false);
+        dxl.torqueEnable(TARGET_ID5, false);
+        dxl.torqueEnable(TARGET_ID6, false);
+        dxl.torqueEnable(TARGET_ID7, false);
+        dxl.torqueEnable(TARGET_ID8, false);
+
+        dxl.torqueEnable(TARGET_ID13, false);
+        dxl.torqueEnable(TARGET_ID15, false);
+        dxl.torqueEnable(TARGET_ID16, false);
+        dxl.torqueEnable(TARGET_ID17, false);
+        dxl.torqueEnable(TARGET_ID18, false);
+        mode = 10;
+        ///////////////////////////////////////////////////////////////
+        
         drawKeypad();
+
         break;
       }
 
@@ -1441,7 +1489,7 @@ void playMotion() {
     dxl.torqueEnable(TARGET_ID16, false);
     dxl.torqueEnable(TARGET_ID17, false);
     dxl.torqueEnable(TARGET_ID18, false);
-    mode = 0;
+    mode = 10;
     zero();
     slow();
   }
