@@ -118,7 +118,7 @@ Action ACTIONS[] = {
 };
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.14.11"
+#define VERSION_NUMBER  "ver. 0.14.12"
 // -----------------------------------
 
 String bluetoothDeviceName = "YushunArm";
@@ -208,8 +208,8 @@ const int s14diference = 800; //id:14モータの目標値と実測値の差分 
 int rightArmFlag = 0; //フリーの時、落下防止に動きを遅くするフラグ
 int leftArmFlag = 0; //フリーの時、落下防止に動きを遅くするフラグ
 
-int ran1, ran2, ran3, ran4 = 0;
-int ran11, ran12, ran13, ran14 = 0;
+int ran1, ran2, ran3, ran4, ran5, ran6, ran7, ran8 = 0;
+int ran11, ran12, ran13, ran14, ran15, ran16, ran17, ran18 = 0;
 int s08 = 0;
 int s018 = 0;
 
@@ -755,18 +755,144 @@ void demo() {
   Serial.println(targetPos24);
 }
 
-Action checkAction(String command) {
-    command.trim();
-    for (int i = 0; i < sizeof(ACTIONS); i += 1) {
-        if (command == ACTIONS[i].command) {
-        return ACTIONS[i];
-        }
-    }
-    return ACTIONS[0];
+void startMode() {
+  verticalLevel = 0;
+  horizontalLevel = 0;
+  dxl.torqueEnable(TARGET_ID21, true);
+  dxl.torqueEnable(TARGET_ID23, true);
+  dxl.torqueEnable(TARGET_ID24, true);
+  headProfileVelocity = 3000;
+  dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
+  dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
+  headProfileVelocity = 1500;
+  dxl.goalPosition(TARGET_ID21, verticalHomePos);
+  dxl.goalPosition(TARGET_ID23, horizontalHomePos);
+}
+
+void endMode() {
+  headProfileVelocity = 3000;
+  dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
+  dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
+  headProfileVelocity = 1500;
+  dxl.goalPosition(TARGET_ID21, verticalMaxPos);
+  dxl.goalPosition(TARGET_ID23, horizontalHomePos);
+  delay(3000);
+  dxl.torqueEnable(TARGET_ID21, false);
+  dxl.torqueEnable(TARGET_ID23, false);
+  dxl.torqueEnable(TARGET_ID24, false);
+}
+
+void moveStraightFace() {
+  dxl.goalPosition(TARGET_ID23, horizontalHomePos);
+  horizontalLevel = 0;
+}
+
+void moveVertical(int direction) {
+  if (verticalLevel < pressButtonCount && direction == 1) {
+      verticalLevel++;
+  } else if (verticalLevel > -pressButtonCount && direction == -1) {
+      verticalLevel--;
+  }
+  dxl.goalPosition(TARGET_ID21, ((verticalHomePos - verticalMinPos) / pressButtonCount) * (-verticalLevel) + verticalHomePos);
+}
+
+void moveHorizontal(int direction) {
+  if (horizontalLevel < pressButtonCount && direction == 1) {
+      horizontalLevel++;
+  } else if (horizontalLevel > -pressButtonCount && direction == -1) {
+      horizontalLevel--;
+  }
+  dxl.goalPosition(TARGET_ID23, ((horizontalHomePos - horizontalMinPos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
+}
+
+void centerPosition() {
+  dxl.goalPosition(TARGET_ID21, verticalHomePos);
+  dxl.goalPosition(TARGET_ID23, horizontalHomePos);
+  verticalLevel = 0;
+  horizontalLevel = 0;
+  dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
+  dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
+}
+
+void stopMotion() {
+
+}
+
+void showMemoryData() {
+  // // メモリ使用率を表示
+  uint32_t totalHeap = ESP.getHeapSize();
+  uint32_t freeHeap = ESP.getFreeHeap();
+  uint32_t usedHeap = totalHeap - freeHeap;
+  float heapUsage = (float)usedHeap / totalHeap * 100;
+
+  uint32_t totalPsram = ESP.getPsramSize();
+  uint32_t freePsram = ESP.getFreePsram();
+  uint32_t usedPsram = totalPsram - freePsram;
+  float psramUsage = (float)usedPsram / totalPsram * 100;
+
+  Serial.printf("Heap Max: %u bytes\n", totalHeap);
+  Serial.printf("Heap Used: %u bytes\n", usedHeap);
+  Serial.printf("Heap Usage: %.2f%%\n", heapUsage);
+
+  if (totalPsram > 0) {
+    Serial.printf("PSRAM Max: %u bytes\n", totalPsram);
+    Serial.printf("PSRAM Used: %u bytes\n", usedPsram);
+    Serial.printf("PSRAM Usage: %.2f%%\n", psramUsage);
+  } else {
+    Serial.println("PSRAM not available");
+  }
+
+  // SPIFFS information
+  if (SPIFFS.begin()) {
+    uint32_t totalSpiffs = SPIFFS.totalBytes();
+    uint32_t usedSpiffs = SPIFFS.usedBytes();
+    float spiffsUsage = (float)usedSpiffs / totalSpiffs * 100;
+
+    Serial.printf("SPIFFS Max: %u bytes\n", totalSpiffs);
+    Serial.printf("SPIFFS Used: %u bytes\n", usedSpiffs);
+    Serial.printf("SPIFFS Usage: %.2f%%\n", spiffsUsage);
+
+    SPIFFS.end();
+  } else {
+    Serial.println("SPIFFS Mount Failed");
+  }
+}
+
+void deleteMotionData() {
+  String filesToDelete[] = {"/test1.txt", "/test2.txt", "/test3.txt", "/test4.txt", "/test5.txt"};
+  if (SPIFFS.begin()) {
+      for (int i = 0; i < 5; i++) {
+          if (SPIFFS.exists(filesToDelete[i])) {
+              SPIFFS.remove(filesToDelete[i]);
+              Serial.println("Deleted: " + filesToDelete[i]);
+          } else {
+              Serial.println("File not found: " + filesToDelete[i]);
+          }
+      }
+      SPIFFS.end();
+  } else {
+      Serial.println("SPIFFS Mount Failed");
+  }
 }
 
 
-void checkSerial(){
+
+Action checkAction(String command) {
+  command.trim();
+  for (int i = 0; i < sizeof(ACTIONS); i += 1) {
+    if (command == ACTIONS[i].command) {
+      return ACTIONS[i];
+    }
+  }
+  return ACTIONS[0];
+}
+
+void requestedMotion(int mode) {
+  requestedMode = mode;
+  motionRequested = true;
+}
+
+void handleSerial(){
   if (Serial.available()) {
     String command = Serial.readStringUntil('\n');
     Action action = checkAction(command);
@@ -775,171 +901,63 @@ void checkSerial(){
 
     if (xSemaphoreTake(xSemaphore, (TickType_t)10) == pdTRUE) {
       if (action.id == ArrowPressUp) {
-        if (verticalLevel < pressButtonCount) {
-          verticalLevel++;
-          dxl.goalPosition(TARGET_ID21, (((verticalHomePos - verticalMinPos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
-        }
+        moveVertical(1);
       } else if (action.id == ArrowPressDown) {
-        if (verticalLevel > -pressButtonCount) {
-          verticalLevel--;
-          dxl.goalPosition(TARGET_ID21, (((verticalMaxPos - verticalHomePos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
-        }
+        moveVertical(-1);
       } else if (action.id == ArrowPressRight) {
-        if (horizontalLevel < pressButtonCount) {
-          horizontalLevel++;
-          dxl.goalPosition(TARGET_ID23, ((horizontalHomePos - horizontalMinPos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
-        }
+        moveHorizontal(1);
       } else if (action.id == ArrowPressLeft) {
-        if (horizontalLevel > -pressButtonCount) {
-          horizontalLevel--;
-          dxl.goalPosition(TARGET_ID23, ((horizontalMaxPos - horizontalHomePos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
-        }
+        moveHorizontal(-1);
       } else if (action.id == ArrowPressCenter) {
-        dxl.goalPosition(TARGET_ID21, verticalHomePos);
-        dxl.goalPosition(TARGET_ID23, horizontalHomePos);
-        verticalLevel = 0;
-        horizontalLevel = 0;
-        dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
-        dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
+        // centerPosition();
+        stopMotion();
       } else if (action.id == ButtonPressA) {
-        requestedMode = 11;
-        motionRequested = true;
+        requestedMotion(11);
       } else if (action.id == ButtonPressB) {
-        requestedMode = 12;
-        motionRequested = true;
+        requestedMotion(12);
       } else if (action.id == ButtonPressC) {
-        requestedMode = 13;
-        motionRequested = true;
+        requestedMotion(13);
       } else if (action.id == ButtonPressD) {
-        requestedMode = 14;
-        motionRequested = true;
+        requestedMotion(14);
       } else if (action.id == ButtonPressE) {
-        requestedMode = 15;
-        motionRequested = true;
+        requestedMotion(15);
       } else if (action.id == ButtonPressY) {
-        // // メモリ使用率を表示
-        uint32_t totalHeap = ESP.getHeapSize();
-        uint32_t freeHeap = ESP.getFreeHeap();
-        uint32_t usedHeap = totalHeap - freeHeap;
-        float heapUsage = (float)usedHeap / totalHeap * 100;
-
-        uint32_t totalPsram = ESP.getPsramSize();
-        uint32_t freePsram = ESP.getFreePsram();
-        uint32_t usedPsram = totalPsram - freePsram;
-        float psramUsage = (float)usedPsram / totalPsram * 100;
-
-        Serial.printf("Heap Max: %u bytes\n", totalHeap);
-        Serial.printf("Heap Used: %u bytes\n", usedHeap);
-        Serial.printf("Heap Usage: %.2f%%\n", heapUsage);
-
-        if (totalPsram > 0) {
-          Serial.printf("PSRAM Max: %u bytes\n", totalPsram);
-          Serial.printf("PSRAM Used: %u bytes\n", usedPsram);
-          Serial.printf("PSRAM Usage: %.2f%%\n", psramUsage);
-        } else {
-          Serial.println("PSRAM not available");
-        }
-
-        // SPIFFS information
-        if (SPIFFS.begin()) {
-          uint32_t totalSpiffs = SPIFFS.totalBytes();
-          uint32_t usedSpiffs = SPIFFS.usedBytes();
-          float spiffsUsage = (float)usedSpiffs / totalSpiffs * 100;
-
-          Serial.printf("SPIFFS Max: %u bytes\n", totalSpiffs);
-          Serial.printf("SPIFFS Used: %u bytes\n", usedSpiffs);
-          Serial.printf("SPIFFS Usage: %.2f%%\n", spiffsUsage);
-
-          SPIFFS.end();
-        } else {
-          Serial.println("SPIFFS Mount Failed");
-        }
-
+        showMemoryData();
       } else if (action.id == ButtonPressZ) {
-        // 登録されている1から5のモーションデータを完全に削除
-        String filesToDelete[] = {"/test1.txt", "/test2.txt", "/test3.txt", "/test4.txt", "/test5.txt"};
-        if (SPIFFS.begin()) {
-          for (int i = 0; i < 5; i++) {
-            if (SPIFFS.exists(filesToDelete[i])) {
-              SPIFFS.remove(filesToDelete[i]);
-              Serial.println("Deleted: " + filesToDelete[i]);
-            } else {
-              Serial.println("File not found: " + filesToDelete[i]);
-            }
-          }
-          SPIFFS.end();
-        } else {
-          Serial.println("SPIFFS Mount Failed");
-        }
+        deleteMotionData();
       } else if (action.id == ButtonOut) {
+
       }
 
       if (action.id == Start) {
-        verticalLevel = 0;
-        horizontalLevel = 0;
-        dxl.torqueEnable(TARGET_ID21, true);
-        dxl.torqueEnable(TARGET_ID23, true);
-        dxl.torqueEnable(TARGET_ID24, true);
-
-        headProfileVelocity = 3000;
-        dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
-        dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
-        headProfileVelocity = 1500;
-
-        dxl.goalPosition(TARGET_ID21, verticalHomePos);
-        dxl.goalPosition(TARGET_ID23, horizontalHomePos);
+        Serial.println("talkStart");
+        startMode();
       }
 
       if (action.id == End) {
-        headProfileVelocity = 3000;
-        dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
-        dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
-        headProfileVelocity = 1500;
-
-        dxl.goalPosition(TARGET_ID21, verticalMaxPos);
-        dxl.goalPosition(TARGET_ID23, horizontalHomePos);
-        delay(3000);
-        dxl.torqueEnable(TARGET_ID21, false);
-        dxl.torqueEnable(TARGET_ID23, false);
-        dxl.torqueEnable(TARGET_ID24, false);
+        Serial.println("endTalk");
+        endMode();
       }
 
       if (action.id == HeadArrowPressUp) {
         Serial.println("頭部操作キー上を押下時に送信");
-        if (verticalLevel < pressButtonCount) {
-          verticalLevel++;
-          dxl.goalPosition(TARGET_ID21, (((verticalHomePos - verticalMinPos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
-        }
+        moveVertical(1);
       }
       if (action.id == HeadArrowPressDown) {
         Serial.println("頭部操作キー下を押下時に送信");
-        if (verticalLevel > -pressButtonCount) {
-          verticalLevel--;
-          dxl.goalPosition(TARGET_ID21, (((verticalMaxPos - verticalHomePos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
-        }
+        moveVertical(-1);
       }
       if (action.id == HeadArrowPressRight) {
         Serial.println("頭部操作キー右を押下時に送信");
-        if (horizontalLevel < pressButtonCount) {
-          horizontalLevel++;
-          dxl.goalPosition(TARGET_ID23, ((horizontalHomePos - horizontalMinPos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
-        }
+        moveHorizontal(1);
       }
       if (action.id == HeadArrowPressLeft) {
         Serial.println("頭部操作キー左を押下時に送信");
-        if (horizontalLevel > -pressButtonCount) {
-          horizontalLevel--;
-          dxl.goalPosition(TARGET_ID23, ((horizontalMaxPos - horizontalHomePos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
-        }
+        moveHorizontal(-1);
       }
       if (action.id == HeadArrowPressCenter) {
         Serial.println("頭部操作キー中央を押下時に送信");
-        dxl.goalPosition(TARGET_ID21, verticalHomePos);
-        dxl.goalPosition(TARGET_ID23, horizontalHomePos);
-        verticalLevel = 0;
-        horizontalLevel = 0;
-        dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
-        dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
+        centerPosition();
       }
       if (action.id == HeadArrowOut) {
         Serial.println("頭部操作キーの押下が終了した時に送信");
@@ -961,8 +979,6 @@ void checkSerial(){
       if (action.id == MoveArrowOut) {
         Serial.println("移動キーの押下が終了した時に送信");
       }
-
-
 
       xSemaphoreGive(xSemaphore);
     }
@@ -1360,7 +1376,7 @@ void playMotion() {
         break;
       }
 
-      checkSerial();
+      handleSerial();
 
       if (i * number + 15 >= defaultRecordNumber * 36) {
         Serial.println("インデックス範囲を超えました");
@@ -1722,6 +1738,74 @@ void armloop() {
   }
 }
 
+void toggleMainLoop() {
+  if (mainloop == false) {
+    digitalWrite(pin2, LOW);
+    mainloop = true;
+  } else {
+    digitalWrite(pin2, HIGH);
+    mainloop = false;
+  }
+}
+
+void handleKeyPress(uint8_t b) {
+  if (b == 0) {
+    DISPwrite("RUN b=0");
+    mode = 10;
+  } else if (b == 1) {
+    if (mode >= 1 && mode <= 9) {
+      stopRecording = true;
+    } else {
+      DISPwrite("MODE b=1");
+    }
+  } else if (b == 2) {
+    DISPwrite("REC b=2");
+    mode = 0;
+  } else if (b >= 3 && b <= 7) {
+    DISPwrite("b=" + String(b));
+    int states[] = {sw01State, sw02State, sw03State, sw04State, sw05State};
+    states[b - 3] = 0;
+  }
+}
+
+void handleKeypad() {
+  uint16_t t_x = 0, t_y = 0;
+  bool pressed = tft.getTouch(&t_x, &t_y);
+  for (uint8_t b = 0; b < 12; b++) {
+    if (pressed && key[b].contains(t_x, t_y)) {
+      key[b].press(true);
+      drawKeypad();
+    } else {
+      key[b].press(false);
+    }
+  }
+  for (uint8_t b = 0; b < 12; b++) {
+    if (key[b].justReleased()) key[b].drawButton();
+    if (key[b].justPressed()) {
+      key[b].drawButton(true);
+      handleKeyPress(b);
+      drawKeypad();
+    }
+  }
+}
+
+void checkAudioMode() {
+  int swAudioState = digitalRead(swAudio);
+  if (swAudioState == 0) {
+    audioMode = 1;
+  }
+}
+
+void handleMotionRequest() {
+  if (motionRequested) {
+    mode = requestedMode;
+    playMotion();
+    motionRequested = false;
+    mode = 10;
+  }
+}
+
+
 
 void setup() {
   // Serial.begin(115200);
@@ -1789,11 +1873,19 @@ void setup() {
   ran2 = dxl.presentPosition(TARGET_ID2); delay(5);
   ran3 - dxl.presentPosition(TARGET_ID3); delay(5);
   ran4 = dxl.presentPosition(TARGET_ID4); delay(5);
+  ran5 = dxl.presentPosition(TARGET_ID5); delay(5);
+  ran6 = dxl.presentPosition(TARGET_ID6); delay(5);
+  ran7 = dxl.presentPosition(TARGET_ID7); delay(5);
+  ran8 = dxl.presentPosition(TARGET_ID8); delay(5);
 
   ran11 = dxl.presentPosition(TARGET_ID11); delay(5);
   ran12 = dxl.presentPosition(TARGET_ID12); delay(5);
   ran13 - dxl.presentPosition(TARGET_ID13); delay(5);
   ran14 = dxl.presentPosition(TARGET_ID14); delay(5);
+  ran15 = dxl.presentPosition(TARGET_ID15); delay(5);
+  ran16 = dxl.presentPosition(TARGET_ID16); delay(5);
+  ran17 = dxl.presentPosition(TARGET_ID17); delay(5);
+  ran18 = dxl.presentPosition(TARGET_ID18); delay(5);
 
   Serial.print(ran1);
   Serial.print(",");
@@ -1845,8 +1937,8 @@ void setup() {
   
   // // Core 0でシリアルコマンド監視タスクを実行
   // xTaskCreatePinnedToCore(
-  //   checkSerial,   // 関数
-  //   "checkSerial", // タスク名
+  //   handleSerial,   // 関数
+  //   "handleSerial", // タスク名
   //   8192,        // スタックサイズ
   //   NULL,         // パラメータ
   //   1,            // 優先度
@@ -1868,100 +1960,13 @@ void setup() {
 }
 
 
-
-
-
 void loop(void) {
-  if (mainloop == false){
-    digitalWrite(pin2, LOW);
-    mainloop = true;
-  } else {
-    digitalWrite(pin2, HIGH);
-    mainloop = false;
-  }
-
-  checkSerial();
-
-  uint16_t t_x = 0, t_y = 0;
-  bool pressed = tft.getTouch(&t_x, &t_y);
-  for (uint8_t b = 0; b < 12; b++) {
-    if (pressed && key[b].contains(t_x, t_y)) {
-      key[b].press(true);
-      drawKeypad();
-    } else {
-      key[b].press(false);
-    }
-  }
-
-  for (uint8_t b = 0; b < 12; b++) {
-  // for (uint8_t b = 0; b < 9; b++) {
-
-    if (b < 3) tft.setFreeFont(LABEL1_FONT);
-    else tft.setFreeFont(LABEL2_FONT);
-    if (key[b].justReleased()) key[b].drawButton();
-    if (key[b].justPressed()) {
-      key[b].drawButton(true);
-
-      if (b == 0) {
-        DISPwrite("RUN b=0");
-        mode = 10;
-      }
-
-      if (b == 1) {
-        if (mode >= 1 && mode <= 9) {
-          stopRecording = true;
-        } else {
-          DISPwrite("MODE b=1");
-        }
-      }
-
-      if (b == 2) {
-        DISPwrite("REC b=2");
-        mode = 0;
-      }
-
-      if (b == 3 ) {
-        DISPwrite("b=3");
-        sw01State = 0;
-      }
-
-      if (b == 4 ) {
-        DISPwrite("b=4");
-        sw02State = 0;
-      }
-
-      if (b == 5 ) {
-        DISPwrite("b=5");
-        sw03State = 0;
-      }
-
-      if (b == 6 ) {
-        DISPwrite("b=6");
-        sw04State = 0;
-      }
-
-      if (b == 7 ) {
-        DISPwrite("b=7");
-        sw05State = 0;
-      }
-      drawKeypad();
-
-    }
-  }
+  toggleMainLoop();
+  handleSerial();
+  drawKeypad();
   armloop();
   zero();
   slow();
-
-  int swAudioState = digitalRead(swAudio);
-  if (swAudioState == 0) {
-    audioMode = 1;
-  }
-
-  if (motionRequested) {
-    mode = requestedMode;
-    playMotion();
-    motionRequested = false;
-    mode = 10;
-  }
-
+  checkAudioMode();
+  handleMotionRequest();
 }
