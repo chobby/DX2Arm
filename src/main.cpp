@@ -118,7 +118,7 @@ Action ACTIONS[] = {
 };
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.14.12"
+#define VERSION_NUMBER  "ver. 0.14.13"
 // -----------------------------------
 
 String bluetoothDeviceName = "YushunArm";
@@ -755,6 +755,25 @@ void demo() {
   Serial.println(targetPos24);
 }
 
+void settingProfileVelocity(int settingTime) {
+  dxl.profileVelocity(TARGET_ID1, settingTime);
+  dxl.profileVelocity(TARGET_ID2, settingTime);
+  dxl.profileVelocity(TARGET_ID3, settingTime);
+  dxl.profileVelocity(TARGET_ID4, settingTime);
+  dxl.profileVelocity(TARGET_ID5, settingTime);
+  dxl.profileVelocity(TARGET_ID6, settingTime);
+  dxl.profileVelocity(TARGET_ID7, settingTime);
+  dxl.profileVelocity(TARGET_ID8, settingTime);
+  dxl.profileVelocity(TARGET_ID11, settingTime);
+  dxl.profileVelocity(TARGET_ID12, settingTime);
+  dxl.profileVelocity(TARGET_ID13, settingTime);
+  dxl.profileVelocity(TARGET_ID14, settingTime);
+  dxl.profileVelocity(TARGET_ID15, settingTime);
+  dxl.profileVelocity(TARGET_ID16, settingTime);
+  dxl.profileVelocity(TARGET_ID17, settingTime);
+  dxl.profileVelocity(TARGET_ID18, settingTime);
+}
+
 void startMode() {
   verticalLevel = 0;
   horizontalLevel = 0;
@@ -815,6 +834,27 @@ void centerPosition() {
 }
 
 void stopMotion() {
+
+  settingProfileVelocity(5500);
+
+  dxl.goalPosition(TARGET_ID1, ran1);
+  dxl.goalPosition(TARGET_ID2, ran2);
+  dxl.goalPosition(TARGET_ID3, ran3);
+  dxl.goalPosition(TARGET_ID4, ran4);
+  dxl.goalPosition(TARGET_ID5, ran5);
+  dxl.goalPosition(TARGET_ID6, ran6);
+  dxl.goalPosition(TARGET_ID7, ran7);
+  dxl.goalPosition(TARGET_ID8, ran8);
+  dxl.goalPosition(TARGET_ID11, ran11);
+  dxl.goalPosition(TARGET_ID12, ran12);
+  dxl.goalPosition(TARGET_ID13, ran13);
+  dxl.goalPosition(TARGET_ID14, ran14);
+  dxl.goalPosition(TARGET_ID15, ran15);
+  dxl.goalPosition(TARGET_ID16, ran16);
+  dxl.goalPosition(TARGET_ID17, ran17);
+  dxl.goalPosition(TARGET_ID18, ran18);
+
+  delay(6000);
 
 }
 
@@ -1325,15 +1365,7 @@ void playMotion() {
           keyColor[j] = TFT_DARKGREEN;
         }
 
-        profileVelocity = 5000;
-        dxl.profileVelocity(TARGET_ID1, profileVelocity);
-        dxl.profileVelocity(TARGET_ID2, profileVelocity);
-        dxl.profileVelocity(TARGET_ID3, profileVelocity);
-        dxl.profileVelocity(TARGET_ID4, profileVelocity);
-        dxl.profileVelocity(TARGET_ID11, profileVelocity);
-        dxl.profileVelocity(TARGET_ID12, profileVelocity);
-        dxl.profileVelocity(TARGET_ID13, profileVelocity);
-        dxl.profileVelocity(TARGET_ID14, profileVelocity);
+        settingProfileVelocity(5000);
 
         dxl.goalPosition(TARGET_ID1, ran1);
         dxl.goalPosition(TARGET_ID2, ran2);
@@ -1346,15 +1378,7 @@ void playMotion() {
 
         delay(6000);
 
-        profileVelocity = 1500;
-        dxl.profileVelocity(TARGET_ID1, profileVelocity);
-        dxl.profileVelocity(TARGET_ID2, profileVelocity);
-        dxl.profileVelocity(TARGET_ID3, profileVelocity);
-        dxl.profileVelocity(TARGET_ID4, profileVelocity);
-        dxl.profileVelocity(TARGET_ID11, profileVelocity);
-        dxl.profileVelocity(TARGET_ID12, profileVelocity);
-        dxl.profileVelocity(TARGET_ID13, profileVelocity);
-        dxl.profileVelocity(TARGET_ID14, profileVelocity);
+        settingProfileVelocity(1500);
 
         ///////////////////////////////////////////////////////////////
         dxl.torqueEnable(TARGET_ID3, false);
@@ -1631,22 +1655,8 @@ void armloop() {
     dxl.driveMode(TARGET_ID23, 0x04);
     dxl.driveMode(TARGET_ID24, 0x04);
 
-    dxl.profileVelocity(TARGET_ID1, profileVelocity);
-    dxl.profileVelocity(TARGET_ID2, profileVelocity);
-    dxl.profileVelocity(TARGET_ID3, profileVelocity);
-    dxl.profileVelocity(TARGET_ID4, profileVelocity);
-    dxl.profileVelocity(TARGET_ID5, profileVelocity);
-    dxl.profileVelocity(TARGET_ID6, profileVelocity);
-    dxl.profileVelocity(TARGET_ID7, profileVelocity);
-    dxl.profileVelocity(TARGET_ID8, profileVelocity);
-    dxl.profileVelocity(TARGET_ID11, profileVelocity);
-    dxl.profileVelocity(TARGET_ID12, profileVelocity);
-    dxl.profileVelocity(TARGET_ID13, profileVelocity);
-    dxl.profileVelocity(TARGET_ID14, profileVelocity);
-    dxl.profileVelocity(TARGET_ID15, profileVelocity);
-    dxl.profileVelocity(TARGET_ID16, profileVelocity);
-    dxl.profileVelocity(TARGET_ID17, profileVelocity);
-    dxl.profileVelocity(TARGET_ID18, profileVelocity);
+    settingProfileVelocity(1500);
+
     dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
     dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
     dxl.profileVelocity(TARGET_ID24, profileVelocity);
