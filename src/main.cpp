@@ -4,11 +4,17 @@
 #define DYNAMIXEL_SERIAL Serial2 // change as you want
 
 #include <SPIFFS.h>
+#include "FS.h"
+#include <SPI.h>
+#include <TFT_eSPI.h>
 #include "freertos/semphr.h"
 
 String numberBuffer1 = "test";
 
-SemaphoreHandle_t xSemaphore;
+// ---- S/W Version ------------------
+#define VERSION_NUMBER  "ver. 0.14.14"
+// -----------------------------------
+
 
 TaskHandle_t thp[1]; // マルチスレッドのタスクハンドル格納用
 
@@ -117,9 +123,7 @@ Action ACTIONS[] = {
     { End, "END" }
 };
 
-// ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.14.13"
-// -----------------------------------
+
 
 String bluetoothDeviceName = "YushunArm";
 
@@ -265,9 +269,7 @@ int dxl_goal_position2[2];
 bool dir = true;
 int t = 0;
 
-#include "FS.h"
-#include <SPI.h>
-#include <TFT_eSPI.h>
+
 TFT_eSPI tft = TFT_eSPI();
 #define CALIBRATION_FILE "/TouchCalData1"
 #define REPEAT_CAL false
@@ -915,6 +917,12 @@ void deleteMotionData() {
   }
 }
 
+void requestedMotion(int mode) {
+  requestedMode = mode;
+  motionRequested = true;
+}
+
+
 
 
 Action checkAction(String command) {
@@ -927,10 +935,6 @@ Action checkAction(String command) {
   return ACTIONS[0];
 }
 
-void requestedMotion(int mode) {
-  requestedMode = mode;
-  motionRequested = true;
-}
 
 void handleSerial(){
   if (Serial.available()) {
@@ -938,90 +942,97 @@ void handleSerial(){
     Action action = checkAction(command);
     if (action.id == 0) return;
 
+    if (action.id == ArrowPressUp) {
+      moveVertical(1);
+    } else if (action.id == ArrowPressDown) {
+      moveVertical(-1);
+    } else if (action.id == ArrowPressRight) {
+      moveHorizontal(1);
+    } else if (action.id == ArrowPressLeft) {
+      moveHorizontal(-1);
+    } else if (action.id == ArrowPressCenter) {
+      // centerPosition();
+      stopMotion();
+    } else if (action.id == ButtonPressA) {
+      requestedMotion(11);
+    } else if (action.id == ButtonPressB) {
+      requestedMotion(12);
+    } else if (action.id == ButtonPressC) {
+      requestedMotion(13);
+    } else if (action.id == ButtonPressD) {
+      requestedMotion(14);
+    } else if (action.id == ButtonPressE) {
+      requestedMotion(15);
+    } else if (action.id == ButtonPressY) {
+      showMemoryData();
+    } else if (action.id == ButtonPressZ) {
+      deleteMotionData();
+    } else if (action.id == ButtonOut) {
 
-    if (xSemaphoreTake(xSemaphore, (TickType_t)10) == pdTRUE) {
-      if (action.id == ArrowPressUp) {
-        moveVertical(1);
-      } else if (action.id == ArrowPressDown) {
-        moveVertical(-1);
-      } else if (action.id == ArrowPressRight) {
-        moveHorizontal(1);
-      } else if (action.id == ArrowPressLeft) {
-        moveHorizontal(-1);
-      } else if (action.id == ArrowPressCenter) {
-        // centerPosition();
-        stopMotion();
-      } else if (action.id == ButtonPressA) {
-        requestedMotion(11);
-      } else if (action.id == ButtonPressB) {
-        requestedMotion(12);
-      } else if (action.id == ButtonPressC) {
-        requestedMotion(13);
-      } else if (action.id == ButtonPressD) {
-        requestedMotion(14);
-      } else if (action.id == ButtonPressE) {
-        requestedMotion(15);
-      } else if (action.id == ButtonPressY) {
-        showMemoryData();
-      } else if (action.id == ButtonPressZ) {
-        deleteMotionData();
-      } else if (action.id == ButtonOut) {
-
-      }
-
-      if (action.id == Start) {
-        Serial.println("talkStart");
-        startMode();
-      }
-
-      if (action.id == End) {
-        Serial.println("endTalk");
-        endMode();
-      }
-
-      if (action.id == HeadArrowPressUp) {
-        Serial.println("頭部操作キー上を押下時に送信");
-        moveVertical(1);
-      }
-      if (action.id == HeadArrowPressDown) {
-        Serial.println("頭部操作キー下を押下時に送信");
-        moveVertical(-1);
-      }
-      if (action.id == HeadArrowPressRight) {
-        Serial.println("頭部操作キー右を押下時に送信");
-        moveHorizontal(1);
-      }
-      if (action.id == HeadArrowPressLeft) {
-        Serial.println("頭部操作キー左を押下時に送信");
-        moveHorizontal(-1);
-      }
-      if (action.id == HeadArrowPressCenter) {
-        Serial.println("頭部操作キー中央を押下時に送信");
-        centerPosition();
-      }
-      if (action.id == HeadArrowOut) {
-        Serial.println("頭部操作キーの押下が終了した時に送信");
-      }
-
-
-      if (action.id == MoveArrowPressUp) {
-        Serial.println("移動キー上を押下時に送信");
-      }
-      if (action.id == MoveArrowPressDown) {
-        Serial.println("移動キ下を押下時に送信");
-      }
-      if (action.id == MoveArrowPressRight) {
-        Serial.println("移動キー右を押下時に送信");
-      }
-      if (action.id == MoveArrowPressLeft) {
-        Serial.println("移動キー左を押下時に送信");
-      }
-      if (action.id == MoveArrowOut) {
-        Serial.println("移動キーの押下が終了した時に送信");
-      }
-
-      xSemaphoreGive(xSemaphore);
     }
+
+    if (action.id == Start) {
+      Serial.println("talkStart");
+      startMode();
+    }
+
+    if (action.id == End) {
+      Serial.println("endTalk");
+      endMode();
+    }
+
+    if (action.id == HeadArrowPressUp) {
+      Serial.println("頭部操作キー上を押下時に送信");
+      Serial.println("HeadArrowPressUp");
+      moveVertical(1);
+    }
+    if (action.id == HeadArrowPressDown) {
+      Serial.println("頭部操作キー下を押下時に送信");
+      Serial.println("HeadArrowPressDown");
+      moveVertical(-1);
+    }
+    if (action.id == HeadArrowPressRight) {
+      Serial.println("頭部操作キー右を押下時に送信");
+      Serial.println("HeadArrowPressRight");
+      moveHorizontal(1);
+    }
+    if (action.id == HeadArrowPressLeft) {
+      Serial.println("頭部操作キー左を押下時に送信");
+      Serial.println("HeadArrowPressLeft");
+      moveHorizontal(-1);
+    }
+    if (action.id == HeadArrowPressCenter) {
+      Serial.println("頭部操作キー中央を押下時に送信");
+      Serial.println("HeadArrowPressCenter");
+      centerPosition();
+    }
+    if (action.id == HeadArrowOut) {
+      Serial.println("頭部操作キーの押下が終了した時に送信");
+      Serial.println("HeadArrowOut");
+    }
+
+
+    if (action.id == MoveArrowPressUp) {
+      Serial.println("移動キー上を押下時に送信");
+      Serial.println("MoveArrowPressUp");
+    }
+    if (action.id == MoveArrowPressDown) {
+      Serial.println("移動キ下を押下時に送信");
+      Serial.println("MoveArrowPressDown");
+    }
+    if (action.id == MoveArrowPressRight) {
+      Serial.println("移動キー右を押下時に送信");
+      Serial.println("MoveArrowPressRight");
+    }
+    if (action.id == MoveArrowPressLeft) {
+      Serial.println("移動キー左を押下時に送信");
+      Serial.println("MoveArrowPressLeft");
+    }
+    if (action.id == MoveArrowOut) {
+      Serial.println("移動キーの押下が終了した時に送信");
+      Serial.println("MoveArrowOut");
+    }
+
   }
   vTaskDelay(10 / portTICK_PERIOD_MS);
 }
@@ -1400,7 +1411,7 @@ void playMotion() {
         break;
       }
 
-      handleSerial();
+      // handleSerial();
 
       if (i * number + 15 >= defaultRecordNumber * 36) {
         Serial.println("インデックス範囲を超えました");
@@ -1484,31 +1495,27 @@ void playMotion() {
       leftArmRange(s12, ran12);
       leftArmRange(s14, ran14);
 
+      digitalWrite(pin1, HIGH);
 
-      if (xSemaphoreTake(xSemaphore, (TickType_t)10) == pdTRUE) {
-        digitalWrite(pin1, HIGH);
+      dxl.goalPosition(TARGET_ID1, ss1);
+      dxl.goalPosition(TARGET_ID2, ss2);
+      dxl.goalPosition(TARGET_ID3, ss3);
+      dxl.goalPosition(TARGET_ID4, ss4);
+      dxl.goalPosition(TARGET_ID5, ss5);
+      dxl.goalPosition(TARGET_ID6, ss6);
+      dxl.goalPosition(TARGET_ID7, ss7);
+      dxl.goalPosition(TARGET_ID8, ss8 + 15);
 
-        dxl.goalPosition(TARGET_ID1, ss1);
-        dxl.goalPosition(TARGET_ID2, ss2);
-        dxl.goalPosition(TARGET_ID3, ss3);
-        dxl.goalPosition(TARGET_ID4, ss4);
-        dxl.goalPosition(TARGET_ID5, ss5);
-        dxl.goalPosition(TARGET_ID6, ss6);
-        dxl.goalPosition(TARGET_ID7, ss7);
-        dxl.goalPosition(TARGET_ID8, ss8 + 15);
+      dxl.goalPosition(TARGET_ID11, ss11);
+      dxl.goalPosition(TARGET_ID12, ss12);
+      dxl.goalPosition(TARGET_ID13, ss13);
+      dxl.goalPosition(TARGET_ID14, ss14);
+      dxl.goalPosition(TARGET_ID15, ss15);
+      dxl.goalPosition(TARGET_ID16, ss16);
+      dxl.goalPosition(TARGET_ID17, ss17);
+      dxl.goalPosition(TARGET_ID18, ss18 + 15);
 
-        dxl.goalPosition(TARGET_ID11, ss11);
-        dxl.goalPosition(TARGET_ID12, ss12);
-        dxl.goalPosition(TARGET_ID13, ss13);
-        dxl.goalPosition(TARGET_ID14, ss14);
-        dxl.goalPosition(TARGET_ID15, ss15);
-        dxl.goalPosition(TARGET_ID16, ss16);
-        dxl.goalPosition(TARGET_ID17, ss17);
-        dxl.goalPosition(TARGET_ID18, ss18 + 15);
-
-        digitalWrite(pin1, LOW);
-        xSemaphoreGive(xSemaphore);
-      }
+      digitalWrite(pin1, LOW);
 
       vTaskDelay(1 / portTICK_PERIOD_MS);
     }
@@ -1816,6 +1823,13 @@ void handleMotionRequest() {
 }
 
 
+void Core0a(void *args) {
+  Serial.println("Core0a Start");
+  while (true) { // 永久ループに変更
+    handleSerial();
+  }
+}
+
 
 void setup() {
   // Serial.begin(115200);
@@ -1943,21 +1957,9 @@ void setup() {
   disableCore0WDT();
   disableCore1WDT();
 
-  // xTaskCreatePinnedToCore(onlySerialCore, "onlySerialCore", 20480, NULL, 1, &thp[0], 0);
+  // スタックサイズを増やし、優先順位を1に設定
+  xTaskCreatePinnedToCore(Core0a, "Core0a", 8192, NULL, 1, &thp[0], 0);
   
-  // // Core 0でシリアルコマンド監視タスクを実行
-  // xTaskCreatePinnedToCore(
-  //   handleSerial,   // 関数
-  //   "handleSerial", // タスク名
-  //   8192,        // スタックサイズ
-  //   NULL,         // パラメータ
-  //   1,            // 優先度
-  //   &thp[0],         // タスクハンドル
-  //   1);           // Core
-
-  // セマフォの作成
-  xSemaphore = xSemaphoreCreateMutex();
-
   // SPIFFSの初期化とマウント
   if (!SPIFFS.begin(true)) {
     Serial.println("An error has occurred while mounting SPIFFS");
@@ -1969,8 +1971,7 @@ void setup() {
   Serial.println("setup done");
 }
 
-
-void loop(void) {
+void loop() {
   toggleMainLoop();
   handleSerial();
   drawKeypad();
