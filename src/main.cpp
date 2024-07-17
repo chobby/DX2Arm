@@ -12,7 +12,7 @@
 String numberBuffer1 = "test";
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.14.16"
+#define VERSION_NUMBER  "ver. 0.14.17"
 // -----------------------------------
 
 
@@ -1779,22 +1779,48 @@ void toggleMainLoop() {
 }
 
 void handleKeyPress(uint8_t b) {
+
   if (b == 0) {
     DISPwrite("RUN b=0");
     mode = 10;
-  } else if (b == 1) {
+  }
+
+  if (b == 1) {
     if (mode >= 1 && mode <= 9) {
       stopRecording = true;
     } else {
       DISPwrite("MODE b=1");
     }
-  } else if (b == 2) {
+  }
+
+  if (b == 2) {
     DISPwrite("REC b=2");
     mode = 0;
-  } else if (b >= 3 && b <= 7) {
-    DISPwrite("b=" + String(b));
-    int states[] = {sw01State, sw02State, sw03State, sw04State, sw05State};
-    states[b - 3] = 0;
+  }
+
+  if (b == 3 ) {
+    DISPwrite("b=3");
+    sw01State = 0;
+  }
+
+  if (b == 4 ) {
+    DISPwrite("b=4");
+    sw02State = 0;
+  }
+
+  if (b == 5 ) {
+    DISPwrite("b=5");
+    sw03State = 0;
+  }
+
+  if (b == 6 ) {
+    DISPwrite("b=6");
+    sw04State = 0;
+  }
+
+  if (b == 7 ) {
+    DISPwrite("b=7");
+    sw05State = 0;
   }
 }
 
@@ -1810,6 +1836,8 @@ void handleKeypad() {
     }
   }
   for (uint8_t b = 0; b < 12; b++) {
+    if (b < 3) tft.setFreeFont(LABEL1_FONT);
+    else tft.setFreeFont(LABEL2_FONT);
     if (key[b].justReleased()) key[b].drawButton();
     if (key[b].justPressed()) {
       key[b].drawButton(true);
@@ -2025,7 +2053,6 @@ void loop() {
   toggleMainLoop();
   handleSerial();
   handleKeypad();
-  drawKeypad();
   armloop();
   zero();
   slow();
