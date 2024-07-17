@@ -15,9 +15,7 @@ String numberBuffer1 = "test";
 #define VERSION_NUMBER  "ver. 0.14.17"
 // -----------------------------------
 
-
 TaskHandle_t thp[1]; // マルチスレッドのタスクハンドル格納用
-
 
 static const int Empty = 0;
 static const int Start = 1;
