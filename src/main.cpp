@@ -12,7 +12,7 @@
 String numberBuffer1 = "test";
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.14.17"
+#define VERSION_NUMBER  "ver. 0.14.18"
 // -----------------------------------
 
 TaskHandle_t thp[1]; // マルチスレッドのタスクハンドル格納用
@@ -820,13 +820,23 @@ void moveStraightFace() {
   horizontalLevel = 0;
 }
 
+
+
+
 void moveVertical(int direction) {
   if (verticalLevel < pressButtonCount && direction == 1) {
       verticalLevel++;
   } else if (verticalLevel > -pressButtonCount && direction == -1) {
       verticalLevel--;
   }
-  dxl.goalPosition(TARGET_ID21, ((verticalHomePos - verticalMinPos) / pressButtonCount) * (-verticalLevel) + verticalHomePos);
+  
+  int newPosition = ((verticalHomePos - verticalMinPos) / pressButtonCount) * (-verticalLevel) + verticalHomePos;
+  
+  // 範囲外の値を設定しないようにチェック
+  if (newPosition < verticalMinPos) newPosition = verticalMinPos;
+  if (newPosition > verticalMaxPos) newPosition = verticalMaxPos;
+  
+  dxl.goalPosition(TARGET_ID21, newPosition);
 }
 
 void moveHorizontal(int direction) {
@@ -835,7 +845,14 @@ void moveHorizontal(int direction) {
   } else if (horizontalLevel > -pressButtonCount && direction == -1) {
       horizontalLevel--;
   }
-  dxl.goalPosition(TARGET_ID23, ((horizontalHomePos - horizontalMinPos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
+
+  int newPosition = ((horizontalHomePos - horizontalMinPos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos;
+
+  // 範囲外の値を設定しないようにチェック
+  if (newPosition < horizontalMinPos) newPosition = horizontalMinPos;
+  if (newPosition > horizontalMaxPos) newPosition = horizontalMaxPos;
+
+  dxl.goalPosition(TARGET_ID23, newPosition);
 }
 
 void centerPosition() {
@@ -846,6 +863,7 @@ void centerPosition() {
   dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
   dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
 }
+
 
 
 void stopMotion() {
@@ -989,6 +1007,9 @@ void handleSerial(){
     } else if (action.id == ButtonPressE) {
       Serial.println("ButtonPressE");
       requestedMotion(15);
+    } else if (action.id == ButtonPressX) {
+      Serial.println("ButtonPressX");
+      startMode();
     } else if (action.id == ButtonPressY) {
       Serial.println("ButtonPressY");
       showMemoryData();
@@ -1057,7 +1078,7 @@ void handleSerial(){
     }
 
   }
-  vTaskDelay(10 / portTICK_PERIOD_MS);
+  vTaskDelay(100 / portTICK_PERIOD_MS);
 }
 
 
@@ -1933,7 +1954,7 @@ void setup() {
   Pgain_on();
 
   ran1 = dxl.presentPosition(TARGET_ID1); delay(5);
-  ran2 = dxl.presentPosition(TARGET_ID2); delay(10);
+  ran2 = dxl.presentPosition(TARGET_ID2); delay(5);
   ran3 - dxl.presentPosition(TARGET_ID3); delay(5);
   ran4 = dxl.presentPosition(TARGET_ID4); delay(5);
   ran5 = dxl.presentPosition(TARGET_ID5); delay(5);
@@ -1942,28 +1963,13 @@ void setup() {
   ran8 = dxl.presentPosition(TARGET_ID8); delay(5);
 
   ran11 = dxl.presentPosition(TARGET_ID11); delay(5);
-  ran12 = dxl.presentPosition(TARGET_ID12); delay(10);
+  ran12 = dxl.presentPosition(TARGET_ID12); delay(5);
   ran13 - dxl.presentPosition(TARGET_ID13); delay(5);
   ran14 = dxl.presentPosition(TARGET_ID14); delay(5);
   ran15 = dxl.presentPosition(TARGET_ID15); delay(5);
   ran16 = dxl.presentPosition(TARGET_ID16); delay(5);
   ran17 = dxl.presentPosition(TARGET_ID17); delay(5);
   ran18 = dxl.presentPosition(TARGET_ID18); delay(5);
-
-  // Serial.print("ran1 = ");
-  // Serial.print(ran1);
-  // Serial.print(", ran2 = ");
-  // Serial.print(ran2);
-  // Serial.print(", ran4 = ");
-  // Serial.print(ran4);
-  // Serial.print(", ran11 = ");
-  // Serial.print(ran11);
-  // Serial.print(", ran12 = ");
-  // Serial.print(ran12);
-  // Serial.print(", ran13 = ");
-  // Serial.print(ran13);
-  // Serial.print(", ran14 = ");
-  // Serial.println(ran14);
 
   Serial.print(ran1);
   Serial.print(", ");
@@ -2035,6 +2041,7 @@ void setup() {
 
   // スタックサイズを増やし、優先順位を1に設定
   xTaskCreatePinnedToCore(Core0a, "Core0a", 8192, NULL, 1, &thp[0], 0);
+  // xTaskCreatePinnedToCore(Core0a, "Core0a", 16384, NULL, 1, &thp[0], 0);
   
   // SPIFFSの初期化とマウント
   if (!SPIFFS.begin(true)) {
