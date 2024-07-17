@@ -12,7 +12,7 @@
 String numberBuffer1 = "test";
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.14.14"
+#define VERSION_NUMBER  "ver. 0.14.15"
 // -----------------------------------
 
 
@@ -73,54 +73,54 @@ struct Action {
     String command;
 };
 Action ACTIONS[] = {
-    { Empty, "__" },
-    { Start, "START" },
-    { ArrowPressUp, "ARROW_PRESS_UP" },
-    { ArrowPressDown, "ARROW_PRESS_DOWN" },
-    { ArrowPressLeft, "ARROW_PRESS_LEFT" },
-    { ArrowPressRight, "ARROW_PRESS_RIGHT" },
-    { ArrowPressCenter, "ARROW_PRESS_CENTER" },
-    { ArrowOut, "ARROW_OUT" },
-    { ButtonPressA, "BUTTON_PRESS_A" },
-    { ButtonPressB, "BUTTON_PRESS_B" },
-    { ButtonPressC, "BUTTON_PRESS_C" },
-    { ButtonPressD, "BUTTON_PRESS_D" },
-    { ButtonPressE, "BUTTON_PRESS_E" },
-    { ButtonPressF, "BUTTON_PRESS_F" },
-    { ButtonPressG, "BUTTON_PRESS_G" },
-    { ButtonPressH, "BUTTON_PRESS_H" },
-    { ButtonPressI, "BUTTON_PRESS_I" },
-    { ButtonPressJ, "BUTTON_PRESS_J" },
-    { ButtonPressK, "BUTTON_PRESS_K" },
-    { ButtonPressL, "BUTTON_PRESS_L" },
-    { ButtonPressM, "BUTTON_PRESS_M" },
-    { ButtonPressN, "BUTTON_PRESS_N" },
-    { ButtonPressO, "BUTTON_PRESS_O" },
-    { ButtonPressP, "BUTTON_PRESS_P" },
-    { ButtonPressQ, "BUTTON_PRESS_Q" },
-    { ButtonPressR, "BUTTON_PRESS_R" },
-    { ButtonPressS, "BUTTON_PRESS_S" },
-    { ButtonPressT, "BUTTON_PRESS_T" },
-    { ButtonPressU, "BUTTON_PRESS_U" },
-    { ButtonPressV, "BUTTON_PRESS_V" },
-    { ButtonPressW, "BUTTON_PRESS_W" },
-    { ButtonPressX, "BUTTON_PRESS_X" },
-    { ButtonPressY, "BUTTON_PRESS_Y" },
-    { ButtonPressZ, "BUTTON_PRESS_Z" },
-    { ButtonOut, "BUTTON_OUT" },
-    { HeadArrowPressUp, "HEAD_ARROW_PRESS_UP"},
-    { HeadArrowPressDown, "HEAD_ARROW_PRESS_DOWN"},
-    { HeadArrowPressLeft, "HEAD_ARROW_PRESS_LEFT"},
-    { HeadArrowPressRight, "HEAD_ARROW_PRESS_RIGHT"},
-    { HeadArrowPressCenter, "HEAD_ARROW_PRESS_CENTER"},
-    { HeadArrowOut, "HEAD_ARROW_OUT"},
-    { MoveArrowPressUp, "MOVE_ARROW_PRESS_UP"},
-    { MoveArrowPressDown, "MOVE_ARROW_PRESS_DOWN"},
-    { MoveArrowPressLeft, "MOVE_ARROW_PRESS_LEFT"},
-    { MoveArrowPressRight, "MOVE_ARROW_PRESS_RIGHT"},
-    { MoveArrowPressCenter, "MOVE_ARROW_PRESS_CENTER"},
-    { MoveArrowOut, "MOVE_ARROW_OUT"},
-    { End, "END" }
+  { Empty, "__" },
+  { Start, "START" },
+  { ArrowPressUp, "ARROW_PRESS_UP" },
+  { ArrowPressDown, "ARROW_PRESS_DOWN" },
+  { ArrowPressLeft, "ARROW_PRESS_LEFT" },
+  { ArrowPressRight, "ARROW_PRESS_RIGHT" },
+  { ArrowPressCenter, "ARROW_PRESS_CENTER" },
+  { ArrowOut, "ARROW_OUT" },
+  { ButtonPressA, "BUTTON_PRESS_A" },
+  { ButtonPressB, "BUTTON_PRESS_B" },
+  { ButtonPressC, "BUTTON_PRESS_C" },
+  { ButtonPressD, "BUTTON_PRESS_D" },
+  { ButtonPressE, "BUTTON_PRESS_E" },
+  { ButtonPressF, "BUTTON_PRESS_F" },
+  { ButtonPressG, "BUTTON_PRESS_G" },
+  { ButtonPressH, "BUTTON_PRESS_H" },
+  { ButtonPressI, "BUTTON_PRESS_I" },
+  { ButtonPressJ, "BUTTON_PRESS_J" },
+  { ButtonPressK, "BUTTON_PRESS_K" },
+  { ButtonPressL, "BUTTON_PRESS_L" },
+  { ButtonPressM, "BUTTON_PRESS_M" },
+  { ButtonPressN, "BUTTON_PRESS_N" },
+  { ButtonPressO, "BUTTON_PRESS_O" },
+  { ButtonPressP, "BUTTON_PRESS_P" },
+  { ButtonPressQ, "BUTTON_PRESS_Q" },
+  { ButtonPressR, "BUTTON_PRESS_R" },
+  { ButtonPressS, "BUTTON_PRESS_S" },
+  { ButtonPressT, "BUTTON_PRESS_T" },
+  { ButtonPressU, "BUTTON_PRESS_U" },
+  { ButtonPressV, "BUTTON_PRESS_V" },
+  { ButtonPressW, "BUTTON_PRESS_W" },
+  { ButtonPressX, "BUTTON_PRESS_X" },
+  { ButtonPressY, "BUTTON_PRESS_Y" },
+  { ButtonPressZ, "BUTTON_PRESS_Z" },
+  { ButtonOut, "BUTTON_OUT" },
+  { HeadArrowPressUp, "HEAD_ARROW_PRESS_UP"},
+  { HeadArrowPressDown, "HEAD_ARROW_PRESS_DOWN"},
+  { HeadArrowPressLeft, "HEAD_ARROW_PRESS_LEFT"},
+  { HeadArrowPressRight, "HEAD_ARROW_PRESS_RIGHT"},
+  { HeadArrowPressCenter, "HEAD_ARROW_PRESS_CENTER"},
+  { HeadArrowOut, "HEAD_ARROW_OUT"},
+  { MoveArrowPressUp, "MOVE_ARROW_PRESS_UP"},
+  { MoveArrowPressDown, "MOVE_ARROW_PRESS_DOWN"},
+  { MoveArrowPressLeft, "MOVE_ARROW_PRESS_LEFT"},
+  { MoveArrowPressRight, "MOVE_ARROW_PRESS_RIGHT"},
+  { MoveArrowPressCenter, "MOVE_ARROW_PRESS_CENTER"},
+  { MoveArrowOut, "MOVE_ARROW_OUT"},
+  { End, "END" }
 };
 
 
@@ -212,8 +212,11 @@ const int s14diference = 800; //id:14モータの目標値と実測値の差分 
 int rightArmFlag = 0; //フリーの時、落下防止に動きを遅くするフラグ
 int leftArmFlag = 0; //フリーの時、落下防止に動きを遅くするフラグ
 
-int ran1, ran2, ran3, ran4, ran5, ran6, ran7, ran8 = 0;
-int ran11, ran12, ran13, ran14, ran15, ran16, ran17, ran18 = 0;
+
+int ran1, ran2, ran4, ran5, ran6, ran7, ran8 = 0;
+int ran11, ran12, ran14, ran15, ran16, ran17, ran18 = 0;
+int ran3 = 2100;    //なぜかモータの角度を取得できないので、固定値を入れておく
+int ran13 = 1800;   //なぜかモータの角度を取得できないので、固定値を入れておく
 int s08 = 0;
 int s018 = 0;
 
@@ -314,9 +317,9 @@ uint8_t numberIndex = 0;
 
 char keyLabel[9][5] = {"RUN", "MODE", "REC", "1", "2", "3", "4", "5", "6"};
 uint16_t keyColor[9] = {
-  TFT_RED, TFT_DARKGREY, TFT_DARKGREEN,
-  TFT_DARKGREY, TFT_DARKGREY, TFT_DARKGREY,
-  TFT_DARKGREY, TFT_DARKGREY, TFT_DARKGREY,
+TFT_RED, TFT_DARKGREY, TFT_DARKGREEN,
+TFT_DARKGREY, TFT_DARKGREY, TFT_DARKGREY,
+TFT_DARKGREY, TFT_DARKGREY, TFT_DARKGREY,
 };
 
 TFT_eSPI_Button key[9];
@@ -431,9 +434,9 @@ void touch_calibrate() {
     {
       File f = SPIFFS.open(CALIBRATION_FILE, "r");
       if (f) {
-        if (f.readBytes((char *)calData, 14) == 14)
+          if (f.readBytes((char *)calData, 14) == 14)
           calDataOK = 1;
-        f.close();
+          f.close();
       }
     }
   }
@@ -483,99 +486,98 @@ void status(const char *msg) {
 void drawKeypad() {
   for (uint8_t row = 0; row < 3; row++) {
     for (uint8_t col = 0; col < 3; col++) {
-      uint8_t b = col + row * 3;
+    uint8_t b = col + row * 3;
 
-      if (b < 3) tft.setFreeFont(LABEL1_FONT);
-      else tft.setFreeFont(LABEL2_FONT);
+    if (b < 3) tft.setFreeFont(LABEL1_FONT);
+    else tft.setFreeFont(LABEL2_FONT);
 
-      if (b == 1 && ((0 < mode  && mode < 10) || (10 < mode  && mode < 20))) {
-        keyLabel[b][0] = 'S';
-        keyLabel[b][1] = 'T';
-        keyLabel[b][2] = 'O';
-        keyLabel[b][3] = 'P';
-        keyLabel[b][4] = '\0';
-      } else if (b == 1 && (mode < 1 || mode == 10 || 20 < mode)) {
-        keyLabel[b][0] = 'M';
-        keyLabel[b][1] = 'O';
-        keyLabel[b][2] = 'D';
-        keyLabel[b][3] = 'E';
-        keyLabel[b][4] = '\0';
+    if (b == 1 && ((0 < mode  && mode < 10) || (10 < mode  && mode < 20))) {
+      keyLabel[b][0] = 'S';
+      keyLabel[b][1] = 'T';
+      keyLabel[b][2] = 'O';
+      keyLabel[b][3] = 'P';
+      keyLabel[b][4] = '\0';
+    } else if (b == 1 && (mode < 1 || mode == 10 || 20 < mode)) {
+      keyLabel[b][0] = 'M';
+      keyLabel[b][1] = 'O';
+      keyLabel[b][2] = 'D';
+      keyLabel[b][3] = 'E';
+      keyLabel[b][4] = '\0';
+    }
+
+    if(audioMode == 0) {
+      keyColor[0] = TFT_DARKGREEN;
+      keyColor[1] = TFT_DARKGREY;
+      keyColor[2] = TFT_RED;
+      
+      if (mode == 0){
+        keyColor[3] = TFT_RED;
+        keyColor[4] = TFT_RED;
+        keyColor[5] = TFT_RED;
+        keyColor[6] = TFT_RED;
+        keyColor[7] = TFT_RED;
+        keyColor[8] = TFT_RED;
       }
 
-      if(audioMode == 0) {
-          keyColor[0] = TFT_DARKGREEN;
-          keyColor[1] = TFT_DARKGREY;
-          keyColor[2] = TFT_RED;
-        
-        if (mode == 0){
-          keyColor[3] = TFT_RED;
-          keyColor[4] = TFT_RED;
-          keyColor[5] = TFT_RED;
-          keyColor[6] = TFT_RED;
-          keyColor[7] = TFT_RED;
-          keyColor[8] = TFT_RED;
-        }
-
-        if(mode == 10){
-          keyColor[3] = TFT_DARKGREEN;
-          keyColor[4] = TFT_DARKGREEN;
-          keyColor[5] = TFT_DARKGREEN;
-          keyColor[6] = TFT_DARKGREEN;
-          keyColor[7] = TFT_DARKGREEN;
-          keyColor[8] = TFT_DARKGREEN;
-        }
-        
-
-        if (0 < mode && mode < 10) {
-          for (int i = 3; i < 9; i++) {
-            if (i == mode + 2){
-              keyColor[i] = TFT_RED;
-            } else {
-              keyColor[i] = TFT_DARKGREY;
-            }
-          }
-        }
-
-        if (10 < mode && mode < 20) {
-          for (int i = 3; i < 9; i++) {
-            if (i == mode - 8){
-              keyColor[i] = TFT_DARKGREEN;
-            } else {
-              keyColor[i] = TFT_DARKGREY;
-            }
-          }
-        }
-
+      if(mode == 10){
+        keyColor[3] = TFT_DARKGREEN;
+        keyColor[4] = TFT_DARKGREEN;
+        keyColor[5] = TFT_DARKGREEN;
+        keyColor[6] = TFT_DARKGREEN;
+        keyColor[7] = TFT_DARKGREEN;
+        keyColor[8] = TFT_DARKGREEN;
       }
-      else {
-        keyColor[0] = TFT_DARKGREY;
-        keyColor[1] = TFT_BLUE;
-        keyColor[2] = TFT_DARKGREY;
+      
 
-        if(audioMode == 1){
-          keyColor[3] = TFT_BLUE;
-          keyColor[4] = TFT_BLUE;
-          keyColor[5] = TFT_BLUE;
-          keyColor[6] = TFT_BLUE;
-          keyColor[7] = TFT_BLUE;
-          keyColor[8] = TFT_BLUE;        
-        }
-
-        if (1 < audioMode && audioMode < 8) {
-          for (int i = 3; i < 9; i++) {
-            if (i == audioMode + 1){
-              keyColor[i] = TFT_BLUE;
-            } else {
-              keyColor[i] = TFT_DARKGREY;
-            }
+      if (0 < mode && mode < 10) {
+        for (int i = 3; i < 9; i++) {
+          if (i == mode + 2){
+            keyColor[i] = TFT_RED;
+          } else {
+            keyColor[i] = TFT_DARKGREY;
           }
         }
       }
-      key[b].initButton(&tft, KEY_X + col * (KEY_W + KEY_SPACING_X),
+
+      if (10 < mode && mode < 20) {
+        for (int i = 3; i < 9; i++) {
+          if (i == mode - 8){
+            keyColor[i] = TFT_DARKGREEN;
+          } else {
+            keyColor[i] = TFT_DARKGREY;
+          }
+        }
+      }
+
+    } else {
+      keyColor[0] = TFT_DARKGREY;
+      keyColor[1] = TFT_BLUE;
+      keyColor[2] = TFT_DARKGREY;
+
+      if(audioMode == 1){
+        keyColor[3] = TFT_BLUE;
+        keyColor[4] = TFT_BLUE;
+        keyColor[5] = TFT_BLUE;
+        keyColor[6] = TFT_BLUE;
+        keyColor[7] = TFT_BLUE;
+        keyColor[8] = TFT_BLUE;        
+      }
+
+      if (1 < audioMode && audioMode < 8) {
+        for (int i = 3; i < 9; i++) {
+          if (i == audioMode + 1){
+            keyColor[i] = TFT_BLUE;
+          } else {
+            keyColor[i] = TFT_DARKGREY;
+          }
+        }
+      }
+    }
+    key[b].initButton(&tft, KEY_X + col * (KEY_W + KEY_SPACING_X),
                         KEY_Y + row * (KEY_H + KEY_SPACING_Y), // x, y, w, h, outline, fill, text
                         KEY_W, KEY_H, TFT_WHITE, keyColor[b], TFT_WHITE,
                         keyLabel[b], KEY_TEXTSIZE);
-      key[b].drawButton();
+    key[b].drawButton();
     }
   }
 }
@@ -774,6 +776,8 @@ void settingProfileVelocity(int settingTime) {
   dxl.profileVelocity(TARGET_ID16, settingTime);
   dxl.profileVelocity(TARGET_ID17, settingTime);
   dxl.profileVelocity(TARGET_ID18, settingTime);
+  
+  delay(100);
 }
 
 void startMode() {
@@ -835,9 +839,10 @@ void centerPosition() {
   dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
 }
 
+
 void stopMotion() {
 
-  settingProfileVelocity(5500);
+  settingProfileVelocity(10000);
 
   dxl.goalPosition(TARGET_ID1, ran1);
   dxl.goalPosition(TARGET_ID2, ran2);
@@ -856,8 +861,11 @@ void stopMotion() {
   dxl.goalPosition(TARGET_ID17, ran17);
   dxl.goalPosition(TARGET_ID18, ran18);
 
-  delay(6000);
+  delay(11000);
+  Serial.println("stopMotion");
+  Serial.println(ran13);
 
+  settingProfileVelocity(150);
 }
 
 void showMemoryData() {
@@ -903,17 +911,17 @@ void showMemoryData() {
 void deleteMotionData() {
   String filesToDelete[] = {"/test1.txt", "/test2.txt", "/test3.txt", "/test4.txt", "/test5.txt"};
   if (SPIFFS.begin()) {
-      for (int i = 0; i < 5; i++) {
-          if (SPIFFS.exists(filesToDelete[i])) {
-              SPIFFS.remove(filesToDelete[i]);
-              Serial.println("Deleted: " + filesToDelete[i]);
-          } else {
-              Serial.println("File not found: " + filesToDelete[i]);
-          }
+    for (int i = 0; i < 5; i++) {
+      if (SPIFFS.exists(filesToDelete[i])) {
+        SPIFFS.remove(filesToDelete[i]);
+        Serial.println("Deleted: " + filesToDelete[i]);
+      } else {
+        Serial.println("File not found: " + filesToDelete[i]);
       }
-      SPIFFS.end();
+    }
+    SPIFFS.end();
   } else {
-      Serial.println("SPIFFS Mount Failed");
+    Serial.println("SPIFFS Mount Failed");
   }
 }
 
@@ -929,7 +937,7 @@ Action checkAction(String command) {
   command.trim();
   for (int i = 0; i < sizeof(ACTIONS); i += 1) {
     if (command == ACTIONS[i].command) {
-      return ACTIONS[i];
+    return ACTIONS[i];
     }
   }
   return ACTIONS[0];
@@ -942,32 +950,45 @@ void handleSerial(){
     Action action = checkAction(command);
     if (action.id == 0) return;
 
+
     if (action.id == ArrowPressUp) {
-      moveVertical(1);
+      Serial.println("ArrowPressUp");
     } else if (action.id == ArrowPressDown) {
-      moveVertical(-1);
+      Serial.println("ArrowPressDown");
     } else if (action.id == ArrowPressRight) {
-      moveHorizontal(1);
+      Serial.println("ArrowPressRight");
     } else if (action.id == ArrowPressLeft) {
-      moveHorizontal(-1);
+      Serial.println("ArrowPressLeft");
     } else if (action.id == ArrowPressCenter) {
-      // centerPosition();
-      stopMotion();
+      Serial.println("ArrowPressCenter");
+      // stopMotion();
+      stopPlaying = true;
+    } else if (action.id == ArrowOut) {
+      Serial.println("ArrowOut");
+
     } else if (action.id == ButtonPressA) {
+      Serial.println("ButtonPressA");
       requestedMotion(11);
     } else if (action.id == ButtonPressB) {
+      Serial.println("ButtonPressB");
       requestedMotion(12);
     } else if (action.id == ButtonPressC) {
+      Serial.println("ButtonPressC");
       requestedMotion(13);
     } else if (action.id == ButtonPressD) {
+      Serial.println("ButtonPressD");
       requestedMotion(14);
     } else if (action.id == ButtonPressE) {
+      Serial.println("ButtonPressE");
       requestedMotion(15);
     } else if (action.id == ButtonPressY) {
+      Serial.println("ButtonPressY");
       showMemoryData();
     } else if (action.id == ButtonPressZ) {
+      Serial.println("ButtonPressZ");
       deleteMotionData();
     } else if (action.id == ButtonOut) {
+      Serial.println("ButtonOut");
 
     }
 
@@ -982,32 +1003,26 @@ void handleSerial(){
     }
 
     if (action.id == HeadArrowPressUp) {
-      Serial.println("頭部操作キー上を押下時に送信");
       Serial.println("HeadArrowPressUp");
       moveVertical(1);
     }
     if (action.id == HeadArrowPressDown) {
-      Serial.println("頭部操作キー下を押下時に送信");
       Serial.println("HeadArrowPressDown");
       moveVertical(-1);
     }
     if (action.id == HeadArrowPressRight) {
-      Serial.println("頭部操作キー右を押下時に送信");
       Serial.println("HeadArrowPressRight");
       moveHorizontal(1);
     }
     if (action.id == HeadArrowPressLeft) {
-      Serial.println("頭部操作キー左を押下時に送信");
       Serial.println("HeadArrowPressLeft");
       moveHorizontal(-1);
     }
     if (action.id == HeadArrowPressCenter) {
-      Serial.println("頭部操作キー中央を押下時に送信");
       Serial.println("HeadArrowPressCenter");
       centerPosition();
     }
     if (action.id == HeadArrowOut) {
-      Serial.println("頭部操作キーの押下が終了した時に送信");
       Serial.println("HeadArrowOut");
     }
 
@@ -1264,7 +1279,7 @@ void recordMotion() {
       DISPwrite("STOPPED");
       stopRecording = false;
     }
-    
+      
     file.close();
   }
 }
@@ -1314,15 +1329,15 @@ void playMotion() {
       if (c == ',' || c == '\n' || c == -1) {
         buffer[pos] = '\0';
         if (index < defaultRecordNumber * 36) { // 範囲チェック
-            values[index++] = atoi(buffer);
+          values[index++] = atoi(buffer);
         }
         pos = 0;
         if (c == '\n' || c == -1) {
-            break;
+          break;
         }
       } else {
         if (pos < sizeof(buffer) - 1) { // バッファオーバーフロー防止
-            buffer[pos++] = c;
+          buffer[pos++] = c;
         }
       }
     }
@@ -1330,7 +1345,6 @@ void playMotion() {
   }
   file.close();
   SPIFFS.end();  // SPIFFSの使用終了
-
 
   totalRecordTime = values[index - 2];
 
@@ -1363,6 +1377,8 @@ void playMotion() {
     dxl.torqueEnable(TARGET_ID17, true);
     dxl.torqueEnable(TARGET_ID18, true);
 
+    settingProfileVelocity(150);
+
     for (int i = 0; i < playMotionTime && i * number + 15 < defaultRecordNumber * 36; i++) {
 
       // STOPボタンが押されたかどうかをチェック
@@ -1376,20 +1392,9 @@ void playMotion() {
           keyColor[j] = TFT_DARKGREEN;
         }
 
-        settingProfileVelocity(5000);
+        DISPwrite("STOPPED");
 
-        dxl.goalPosition(TARGET_ID1, ran1);
-        dxl.goalPosition(TARGET_ID2, ran2);
-        dxl.goalPosition(TARGET_ID3, ran3);
-        dxl.goalPosition(TARGET_ID4, ran4);
-        dxl.goalPosition(TARGET_ID11, ran11);
-        dxl.goalPosition(TARGET_ID12, ran12);
-        dxl.goalPosition(TARGET_ID13, ran13);
-        dxl.goalPosition(TARGET_ID13, ran14);
-
-        delay(6000);
-
-        settingProfileVelocity(1500);
+        stopMotion();
 
         ///////////////////////////////////////////////////////////////
         dxl.torqueEnable(TARGET_ID3, false);
@@ -1410,8 +1415,6 @@ void playMotion() {
 
         break;
       }
-
-      // handleSerial();
 
       if (i * number + 15 >= defaultRecordNumber * 36) {
         Serial.println("インデックス範囲を超えました");
@@ -1523,7 +1526,7 @@ void playMotion() {
     if (!stopPlaying) {
       DISPwrite("COMPLETE");
     } else {
-      DISPwrite("STOPPED");
+      // DISPwrite("STOPPED");
       stopPlaying = false;
     }
 
@@ -1662,7 +1665,7 @@ void armloop() {
     dxl.driveMode(TARGET_ID23, 0x04);
     dxl.driveMode(TARGET_ID24, 0x04);
 
-    settingProfileVelocity(1500);
+    settingProfileVelocity(150);
 
     dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
     dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
@@ -1894,7 +1897,7 @@ void setup() {
   Pgain_on();
 
   ran1 = dxl.presentPosition(TARGET_ID1); delay(5);
-  ran2 = dxl.presentPosition(TARGET_ID2); delay(5);
+  ran2 = dxl.presentPosition(TARGET_ID2); delay(10);
   ran3 - dxl.presentPosition(TARGET_ID3); delay(5);
   ran4 = dxl.presentPosition(TARGET_ID4); delay(5);
   ran5 = dxl.presentPosition(TARGET_ID5); delay(5);
@@ -1903,7 +1906,7 @@ void setup() {
   ran8 = dxl.presentPosition(TARGET_ID8); delay(5);
 
   ran11 = dxl.presentPosition(TARGET_ID11); delay(5);
-  ran12 = dxl.presentPosition(TARGET_ID12); delay(5);
+  ran12 = dxl.presentPosition(TARGET_ID12); delay(10);
   ran13 - dxl.presentPosition(TARGET_ID13); delay(5);
   ran14 = dxl.presentPosition(TARGET_ID14); delay(5);
   ran15 = dxl.presentPosition(TARGET_ID15); delay(5);
@@ -1911,17 +1914,54 @@ void setup() {
   ran17 = dxl.presentPosition(TARGET_ID17); delay(5);
   ran18 = dxl.presentPosition(TARGET_ID18); delay(5);
 
+  // Serial.print("ran1 = ");
+  // Serial.print(ran1);
+  // Serial.print(", ran2 = ");
+  // Serial.print(ran2);
+  // Serial.print(", ran4 = ");
+  // Serial.print(ran4);
+  // Serial.print(", ran11 = ");
+  // Serial.print(ran11);
+  // Serial.print(", ran12 = ");
+  // Serial.print(ran12);
+  // Serial.print(", ran13 = ");
+  // Serial.print(ran13);
+  // Serial.print(", ran14 = ");
+  // Serial.println(ran14);
+
   Serial.print(ran1);
-  Serial.print(",");
+  Serial.print(", ");
   Serial.print(ran2);
-  Serial.print(",");
+  Serial.print(", ran3 = ");
+  Serial.print(ran3);
+  Serial.print(", ");
   Serial.print(ran4);
-  Serial.print(",");
+  Serial.print(", ");
+  Serial.print(ran5);
+  Serial.print(", ");
+  Serial.print(ran6);
+  Serial.print(", ");
+  Serial.print(ran7);
+  Serial.print(", ");
+  Serial.print(ran8);
+  Serial.print(", ");
   Serial.print(ran11);
-  Serial.print(",");
+  Serial.print(", ");
   Serial.print(ran12);
-  Serial.print(",");
-  Serial.println(ran14);
+  Serial.print(", ran13 = ");
+  Serial.print(ran13);
+  Serial.print(", ");
+  Serial.print(ran14);
+  Serial.print(", ");
+  Serial.print(ran15);
+  Serial.print(", ");
+  Serial.print(ran16);
+  Serial.print(", ");
+  Serial.print(ran17);
+  Serial.print(", ");
+  Serial.println(ran18);
+
+
 
   pinMode(pin1, OUTPUT);
   pinMode(pin2, OUTPUT);
@@ -1974,6 +2014,7 @@ void setup() {
 void loop() {
   toggleMainLoop();
   handleSerial();
+  handleKeypad();
   drawKeypad();
   armloop();
   zero();
