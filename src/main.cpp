@@ -4,14 +4,18 @@
 #define DYNAMIXEL_SERIAL Serial2 // change as you want
 
 #include <SPIFFS.h>
+#include "FS.h"
+#include <SPI.h>
+#include <TFT_eSPI.h>
 #include "freertos/semphr.h"
 
 String numberBuffer1 = "test";
 
-SemaphoreHandle_t xSemaphore;
+// ---- S/W Version ------------------
+#define VERSION_NUMBER  "ver. 0.14.18"
+// -----------------------------------
 
 TaskHandle_t thp[1]; // マルチスレッドのタスクハンドル格納用
-
 
 static const int Empty = 0;
 static const int Start = 1;
@@ -67,59 +71,57 @@ struct Action {
     String command;
 };
 Action ACTIONS[] = {
-    { Empty, "__" },
-    { Start, "START" },
-    { ArrowPressUp, "ARROW_PRESS_UP" },
-    { ArrowPressDown, "ARROW_PRESS_DOWN" },
-    { ArrowPressLeft, "ARROW_PRESS_LEFT" },
-    { ArrowPressRight, "ARROW_PRESS_RIGHT" },
-    { ArrowPressCenter, "ARROW_PRESS_CENTER" },
-    { ArrowOut, "ARROW_OUT" },
-    { ButtonPressA, "BUTTON_PRESS_A" },
-    { ButtonPressB, "BUTTON_PRESS_B" },
-    { ButtonPressC, "BUTTON_PRESS_C" },
-    { ButtonPressD, "BUTTON_PRESS_D" },
-    { ButtonPressE, "BUTTON_PRESS_E" },
-    { ButtonPressF, "BUTTON_PRESS_F" },
-    { ButtonPressG, "BUTTON_PRESS_G" },
-    { ButtonPressH, "BUTTON_PRESS_H" },
-    { ButtonPressI, "BUTTON_PRESS_I" },
-    { ButtonPressJ, "BUTTON_PRESS_J" },
-    { ButtonPressK, "BUTTON_PRESS_K" },
-    { ButtonPressL, "BUTTON_PRESS_L" },
-    { ButtonPressM, "BUTTON_PRESS_M" },
-    { ButtonPressN, "BUTTON_PRESS_N" },
-    { ButtonPressO, "BUTTON_PRESS_O" },
-    { ButtonPressP, "BUTTON_PRESS_P" },
-    { ButtonPressQ, "BUTTON_PRESS_Q" },
-    { ButtonPressR, "BUTTON_PRESS_R" },
-    { ButtonPressS, "BUTTON_PRESS_S" },
-    { ButtonPressT, "BUTTON_PRESS_T" },
-    { ButtonPressU, "BUTTON_PRESS_U" },
-    { ButtonPressV, "BUTTON_PRESS_V" },
-    { ButtonPressW, "BUTTON_PRESS_W" },
-    { ButtonPressX, "BUTTON_PRESS_X" },
-    { ButtonPressY, "BUTTON_PRESS_Y" },
-    { ButtonPressZ, "BUTTON_PRESS_Z" },
-    { ButtonOut, "BUTTON_OUT" },
-    { HeadArrowPressUp, "HEAD_ARROW_PRESS_UP"},
-    { HeadArrowPressDown, "HEAD_ARROW_PRESS_DOWN"},
-    { HeadArrowPressLeft, "HEAD_ARROW_PRESS_LEFT"},
-    { HeadArrowPressRight, "HEAD_ARROW_PRESS_RIGHT"},
-    { HeadArrowPressCenter, "HEAD_ARROW_PRESS_CENTER"},
-    { HeadArrowOut, "HEAD_ARROW_OUT"},
-    { MoveArrowPressUp, "MOVE_ARROW_PRESS_UP"},
-    { MoveArrowPressDown, "MOVE_ARROW_PRESS_DOWN"},
-    { MoveArrowPressLeft, "MOVE_ARROW_PRESS_LEFT"},
-    { MoveArrowPressRight, "MOVE_ARROW_PRESS_RIGHT"},
-    { MoveArrowPressCenter, "MOVE_ARROW_PRESS_CENTER"},
-    { MoveArrowOut, "MOVE_ARROW_OUT"},
-    { End, "END" }
+  { Empty, "__" },
+  { Start, "START" },
+  { ArrowPressUp, "ARROW_PRESS_UP" },
+  { ArrowPressDown, "ARROW_PRESS_DOWN" },
+  { ArrowPressLeft, "ARROW_PRESS_LEFT" },
+  { ArrowPressRight, "ARROW_PRESS_RIGHT" },
+  { ArrowPressCenter, "ARROW_PRESS_CENTER" },
+  { ArrowOut, "ARROW_OUT" },
+  { ButtonPressA, "BUTTON_PRESS_A" },
+  { ButtonPressB, "BUTTON_PRESS_B" },
+  { ButtonPressC, "BUTTON_PRESS_C" },
+  { ButtonPressD, "BUTTON_PRESS_D" },
+  { ButtonPressE, "BUTTON_PRESS_E" },
+  { ButtonPressF, "BUTTON_PRESS_F" },
+  { ButtonPressG, "BUTTON_PRESS_G" },
+  { ButtonPressH, "BUTTON_PRESS_H" },
+  { ButtonPressI, "BUTTON_PRESS_I" },
+  { ButtonPressJ, "BUTTON_PRESS_J" },
+  { ButtonPressK, "BUTTON_PRESS_K" },
+  { ButtonPressL, "BUTTON_PRESS_L" },
+  { ButtonPressM, "BUTTON_PRESS_M" },
+  { ButtonPressN, "BUTTON_PRESS_N" },
+  { ButtonPressO, "BUTTON_PRESS_O" },
+  { ButtonPressP, "BUTTON_PRESS_P" },
+  { ButtonPressQ, "BUTTON_PRESS_Q" },
+  { ButtonPressR, "BUTTON_PRESS_R" },
+  { ButtonPressS, "BUTTON_PRESS_S" },
+  { ButtonPressT, "BUTTON_PRESS_T" },
+  { ButtonPressU, "BUTTON_PRESS_U" },
+  { ButtonPressV, "BUTTON_PRESS_V" },
+  { ButtonPressW, "BUTTON_PRESS_W" },
+  { ButtonPressX, "BUTTON_PRESS_X" },
+  { ButtonPressY, "BUTTON_PRESS_Y" },
+  { ButtonPressZ, "BUTTON_PRESS_Z" },
+  { ButtonOut, "BUTTON_OUT" },
+  { HeadArrowPressUp, "HEAD_ARROW_PRESS_UP"},
+  { HeadArrowPressDown, "HEAD_ARROW_PRESS_DOWN"},
+  { HeadArrowPressLeft, "HEAD_ARROW_PRESS_LEFT"},
+  { HeadArrowPressRight, "HEAD_ARROW_PRESS_RIGHT"},
+  { HeadArrowPressCenter, "HEAD_ARROW_PRESS_CENTER"},
+  { HeadArrowOut, "HEAD_ARROW_OUT"},
+  { MoveArrowPressUp, "MOVE_ARROW_PRESS_UP"},
+  { MoveArrowPressDown, "MOVE_ARROW_PRESS_DOWN"},
+  { MoveArrowPressLeft, "MOVE_ARROW_PRESS_LEFT"},
+  { MoveArrowPressRight, "MOVE_ARROW_PRESS_RIGHT"},
+  { MoveArrowPressCenter, "MOVE_ARROW_PRESS_CENTER"},
+  { MoveArrowOut, "MOVE_ARROW_OUT"},
+  { End, "END" }
 };
 
-// ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.14.11"
-// -----------------------------------
+
 
 String bluetoothDeviceName = "YushunArm";
 
@@ -208,8 +210,11 @@ const int s14diference = 800; //id:14モータの目標値と実測値の差分 
 int rightArmFlag = 0; //フリーの時、落下防止に動きを遅くするフラグ
 int leftArmFlag = 0; //フリーの時、落下防止に動きを遅くするフラグ
 
-int ran1, ran2, ran3, ran4 = 0;
-int ran11, ran12, ran13, ran14 = 0;
+
+int ran1, ran2, ran4, ran5, ran6, ran7, ran8 = 0;
+int ran11, ran12, ran14, ran15, ran16, ran17, ran18 = 0;
+int ran3 = 2100;    //なぜかモータの角度を取得できないので、固定値を入れておく
+int ran13 = 1800;   //なぜかモータの角度を取得できないので、固定値を入れておく
 int s08 = 0;
 int s018 = 0;
 
@@ -265,9 +270,7 @@ int dxl_goal_position2[2];
 bool dir = true;
 int t = 0;
 
-#include "FS.h"
-#include <SPI.h>
-#include <TFT_eSPI.h>
+
 TFT_eSPI tft = TFT_eSPI();
 #define CALIBRATION_FILE "/TouchCalData1"
 #define REPEAT_CAL false
@@ -312,9 +315,9 @@ uint8_t numberIndex = 0;
 
 char keyLabel[9][5] = {"RUN", "MODE", "REC", "1", "2", "3", "4", "5", "6"};
 uint16_t keyColor[9] = {
-  TFT_RED, TFT_DARKGREY, TFT_DARKGREEN,
-  TFT_DARKGREY, TFT_DARKGREY, TFT_DARKGREY,
-  TFT_DARKGREY, TFT_DARKGREY, TFT_DARKGREY,
+TFT_RED, TFT_DARKGREY, TFT_DARKGREEN,
+TFT_DARKGREY, TFT_DARKGREY, TFT_DARKGREY,
+TFT_DARKGREY, TFT_DARKGREY, TFT_DARKGREY,
 };
 
 TFT_eSPI_Button key[9];
@@ -429,9 +432,9 @@ void touch_calibrate() {
     {
       File f = SPIFFS.open(CALIBRATION_FILE, "r");
       if (f) {
-        if (f.readBytes((char *)calData, 14) == 14)
+          if (f.readBytes((char *)calData, 14) == 14)
           calDataOK = 1;
-        f.close();
+          f.close();
       }
     }
   }
@@ -481,99 +484,98 @@ void status(const char *msg) {
 void drawKeypad() {
   for (uint8_t row = 0; row < 3; row++) {
     for (uint8_t col = 0; col < 3; col++) {
-      uint8_t b = col + row * 3;
+    uint8_t b = col + row * 3;
 
-      if (b < 3) tft.setFreeFont(LABEL1_FONT);
-      else tft.setFreeFont(LABEL2_FONT);
+    if (b < 3) tft.setFreeFont(LABEL1_FONT);
+    else tft.setFreeFont(LABEL2_FONT);
 
-      if (b == 1 && ((0 < mode  && mode < 10) || (10 < mode  && mode < 20))) {
-        keyLabel[b][0] = 'S';
-        keyLabel[b][1] = 'T';
-        keyLabel[b][2] = 'O';
-        keyLabel[b][3] = 'P';
-        keyLabel[b][4] = '\0';
-      } else if (b == 1 && (mode < 1 || mode == 10 || 20 < mode)) {
-        keyLabel[b][0] = 'M';
-        keyLabel[b][1] = 'O';
-        keyLabel[b][2] = 'D';
-        keyLabel[b][3] = 'E';
-        keyLabel[b][4] = '\0';
+    if (b == 1 && ((0 < mode  && mode < 10) || (10 < mode  && mode < 20))) {
+      keyLabel[b][0] = 'S';
+      keyLabel[b][1] = 'T';
+      keyLabel[b][2] = 'O';
+      keyLabel[b][3] = 'P';
+      keyLabel[b][4] = '\0';
+    } else if (b == 1 && (mode < 1 || mode == 10 || 20 < mode)) {
+      keyLabel[b][0] = 'M';
+      keyLabel[b][1] = 'O';
+      keyLabel[b][2] = 'D';
+      keyLabel[b][3] = 'E';
+      keyLabel[b][4] = '\0';
+    }
+
+    if(audioMode == 0) {
+      keyColor[0] = TFT_DARKGREEN;
+      keyColor[1] = TFT_DARKGREY;
+      keyColor[2] = TFT_RED;
+      
+      if (mode == 0){
+        keyColor[3] = TFT_RED;
+        keyColor[4] = TFT_RED;
+        keyColor[5] = TFT_RED;
+        keyColor[6] = TFT_RED;
+        keyColor[7] = TFT_RED;
+        keyColor[8] = TFT_RED;
       }
 
-      if(audioMode == 0) {
-          keyColor[0] = TFT_DARKGREEN;
-          keyColor[1] = TFT_DARKGREY;
-          keyColor[2] = TFT_RED;
-        
-        if (mode == 0){
-          keyColor[3] = TFT_RED;
-          keyColor[4] = TFT_RED;
-          keyColor[5] = TFT_RED;
-          keyColor[6] = TFT_RED;
-          keyColor[7] = TFT_RED;
-          keyColor[8] = TFT_RED;
-        }
-
-        if(mode == 10){
-          keyColor[3] = TFT_DARKGREEN;
-          keyColor[4] = TFT_DARKGREEN;
-          keyColor[5] = TFT_DARKGREEN;
-          keyColor[6] = TFT_DARKGREEN;
-          keyColor[7] = TFT_DARKGREEN;
-          keyColor[8] = TFT_DARKGREEN;
-        }
-        
-
-        if (0 < mode && mode < 10) {
-          for (int i = 3; i < 9; i++) {
-            if (i == mode + 2){
-              keyColor[i] = TFT_RED;
-            } else {
-              keyColor[i] = TFT_DARKGREY;
-            }
-          }
-        }
-
-        if (10 < mode && mode < 20) {
-          for (int i = 3; i < 9; i++) {
-            if (i == mode - 8){
-              keyColor[i] = TFT_DARKGREEN;
-            } else {
-              keyColor[i] = TFT_DARKGREY;
-            }
-          }
-        }
-
+      if(mode == 10){
+        keyColor[3] = TFT_DARKGREEN;
+        keyColor[4] = TFT_DARKGREEN;
+        keyColor[5] = TFT_DARKGREEN;
+        keyColor[6] = TFT_DARKGREEN;
+        keyColor[7] = TFT_DARKGREEN;
+        keyColor[8] = TFT_DARKGREEN;
       }
-      else {
-        keyColor[0] = TFT_DARKGREY;
-        keyColor[1] = TFT_BLUE;
-        keyColor[2] = TFT_DARKGREY;
+      
 
-        if(audioMode == 1){
-          keyColor[3] = TFT_BLUE;
-          keyColor[4] = TFT_BLUE;
-          keyColor[5] = TFT_BLUE;
-          keyColor[6] = TFT_BLUE;
-          keyColor[7] = TFT_BLUE;
-          keyColor[8] = TFT_BLUE;        
-        }
-
-        if (1 < audioMode && audioMode < 8) {
-          for (int i = 3; i < 9; i++) {
-            if (i == audioMode + 1){
-              keyColor[i] = TFT_BLUE;
-            } else {
-              keyColor[i] = TFT_DARKGREY;
-            }
+      if (0 < mode && mode < 10) {
+        for (int i = 3; i < 9; i++) {
+          if (i == mode + 2){
+            keyColor[i] = TFT_RED;
+          } else {
+            keyColor[i] = TFT_DARKGREY;
           }
         }
       }
-      key[b].initButton(&tft, KEY_X + col * (KEY_W + KEY_SPACING_X),
+
+      if (10 < mode && mode < 20) {
+        for (int i = 3; i < 9; i++) {
+          if (i == mode - 8){
+            keyColor[i] = TFT_DARKGREEN;
+          } else {
+            keyColor[i] = TFT_DARKGREY;
+          }
+        }
+      }
+
+    } else {
+      keyColor[0] = TFT_DARKGREY;
+      keyColor[1] = TFT_BLUE;
+      keyColor[2] = TFT_DARKGREY;
+
+      if(audioMode == 1){
+        keyColor[3] = TFT_BLUE;
+        keyColor[4] = TFT_BLUE;
+        keyColor[5] = TFT_BLUE;
+        keyColor[6] = TFT_BLUE;
+        keyColor[7] = TFT_BLUE;
+        keyColor[8] = TFT_BLUE;        
+      }
+
+      if (1 < audioMode && audioMode < 8) {
+        for (int i = 3; i < 9; i++) {
+          if (i == audioMode + 1){
+            keyColor[i] = TFT_BLUE;
+          } else {
+            keyColor[i] = TFT_DARKGREY;
+          }
+        }
+      }
+    }
+    key[b].initButton(&tft, KEY_X + col * (KEY_W + KEY_SPACING_X),
                         KEY_Y + row * (KEY_H + KEY_SPACING_Y), // x, y, w, h, outline, fill, text
                         KEY_W, KEY_H, TFT_WHITE, keyColor[b], TFT_WHITE,
                         keyLabel[b], KEY_TEXTSIZE);
-      key[b].drawButton();
+    key[b].drawButton();
     }
   }
 }
@@ -755,219 +757,328 @@ void demo() {
   Serial.println(targetPos24);
 }
 
-Action checkAction(String command) {
-    command.trim();
-    for (int i = 0; i < sizeof(ACTIONS); i += 1) {
-        if (command == ACTIONS[i].command) {
-        return ACTIONS[i];
-        }
-    }
-    return ACTIONS[0];
+void settingProfileVelocity(int settingTime) {
+  dxl.profileVelocity(TARGET_ID1, settingTime);
+  dxl.profileVelocity(TARGET_ID2, settingTime);
+  dxl.profileVelocity(TARGET_ID3, settingTime);
+  dxl.profileVelocity(TARGET_ID4, settingTime);
+  dxl.profileVelocity(TARGET_ID5, settingTime);
+  dxl.profileVelocity(TARGET_ID6, settingTime);
+  dxl.profileVelocity(TARGET_ID7, settingTime);
+  dxl.profileVelocity(TARGET_ID8, settingTime);
+  dxl.profileVelocity(TARGET_ID11, settingTime);
+  dxl.profileVelocity(TARGET_ID12, settingTime);
+  dxl.profileVelocity(TARGET_ID13, settingTime);
+  dxl.profileVelocity(TARGET_ID14, settingTime);
+  dxl.profileVelocity(TARGET_ID15, settingTime);
+  dxl.profileVelocity(TARGET_ID16, settingTime);
+  dxl.profileVelocity(TARGET_ID17, settingTime);
+  dxl.profileVelocity(TARGET_ID18, settingTime);
+  
+  delay(100);
+}
+
+void startMode() {
+  verticalLevel = 0;
+  horizontalLevel = 0;
+  dxl.torqueEnable(TARGET_ID21, true);
+  dxl.torqueEnable(TARGET_ID23, true);
+  dxl.torqueEnable(TARGET_ID24, true);
+  
+  headProfileVelocity = 3000;
+  dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
+  dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
+  headProfileVelocity = 1500;
+  dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
+  dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
+
+  dxl.goalPosition(TARGET_ID21, verticalHomePos);
+  dxl.goalPosition(TARGET_ID23, horizontalHomePos);
+  delay(1500);
+  dxl.goalPosition(TARGET_ID21, verticalMaxPos);
+  delay(1500);
+  dxl.goalPosition(TARGET_ID21, verticalHomePos);
+  delay(1500);
+
+}
+
+void endMode() {
+  headProfileVelocity = 3000;
+  dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
+  dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
+  headProfileVelocity = 1500;
+  dxl.goalPosition(TARGET_ID21, verticalMaxPos);
+  dxl.goalPosition(TARGET_ID23, horizontalHomePos);
+  delay(3000);
+  dxl.torqueEnable(TARGET_ID21, false);
+  dxl.torqueEnable(TARGET_ID23, false);
+  dxl.torqueEnable(TARGET_ID24, false);
+}
+
+void moveStraightFace() {
+  dxl.goalPosition(TARGET_ID23, horizontalHomePos);
+  horizontalLevel = 0;
 }
 
 
-void checkSerial(){
+
+
+void moveVertical(int direction) {
+  if (verticalLevel < pressButtonCount && direction == 1) {
+      verticalLevel++;
+  } else if (verticalLevel > -pressButtonCount && direction == -1) {
+      verticalLevel--;
+  }
+  
+  int newPosition = ((verticalHomePos - verticalMinPos) / pressButtonCount) * (-verticalLevel) + verticalHomePos;
+  
+  // 範囲外の値を設定しないようにチェック
+  if (newPosition < verticalMinPos) newPosition = verticalMinPos;
+  if (newPosition > verticalMaxPos) newPosition = verticalMaxPos;
+  
+  dxl.goalPosition(TARGET_ID21, newPosition);
+}
+
+void moveHorizontal(int direction) {
+  if (horizontalLevel < pressButtonCount && direction == 1) {
+      horizontalLevel++;
+  } else if (horizontalLevel > -pressButtonCount && direction == -1) {
+      horizontalLevel--;
+  }
+
+  int newPosition = ((horizontalHomePos - horizontalMinPos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos;
+
+  // 範囲外の値を設定しないようにチェック
+  if (newPosition < horizontalMinPos) newPosition = horizontalMinPos;
+  if (newPosition > horizontalMaxPos) newPosition = horizontalMaxPos;
+
+  dxl.goalPosition(TARGET_ID23, newPosition);
+}
+
+void centerPosition() {
+  dxl.goalPosition(TARGET_ID21, verticalHomePos);
+  dxl.goalPosition(TARGET_ID23, horizontalHomePos);
+  verticalLevel = 0;
+  horizontalLevel = 0;
+  dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
+  dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
+}
+
+
+
+void stopMotion() {
+
+  settingProfileVelocity(10000);
+
+  dxl.goalPosition(TARGET_ID1, ran1);
+  dxl.goalPosition(TARGET_ID2, ran2);
+  dxl.goalPosition(TARGET_ID3, ran3);
+  dxl.goalPosition(TARGET_ID4, ran4);
+  dxl.goalPosition(TARGET_ID5, ran5);
+  dxl.goalPosition(TARGET_ID6, ran6);
+  dxl.goalPosition(TARGET_ID7, ran7);
+  dxl.goalPosition(TARGET_ID8, ran8);
+  dxl.goalPosition(TARGET_ID11, ran11);
+  dxl.goalPosition(TARGET_ID12, ran12);
+  dxl.goalPosition(TARGET_ID13, ran13);
+  dxl.goalPosition(TARGET_ID14, ran14);
+  dxl.goalPosition(TARGET_ID15, ran15);
+  dxl.goalPosition(TARGET_ID16, ran16);
+  dxl.goalPosition(TARGET_ID17, ran17);
+  dxl.goalPosition(TARGET_ID18, ran18);
+
+  delay(11000);
+  Serial.println("stopMotion");
+  Serial.println(ran13);
+
+  settingProfileVelocity(150);
+}
+
+void showMemoryData() {
+  // // メモリ使用率を表示
+  uint32_t totalHeap = ESP.getHeapSize();
+  uint32_t freeHeap = ESP.getFreeHeap();
+  uint32_t usedHeap = totalHeap - freeHeap;
+  float heapUsage = (float)usedHeap / totalHeap * 100;
+
+  uint32_t totalPsram = ESP.getPsramSize();
+  uint32_t freePsram = ESP.getFreePsram();
+  uint32_t usedPsram = totalPsram - freePsram;
+  float psramUsage = (float)usedPsram / totalPsram * 100;
+
+  Serial.printf("Heap Max: %u bytes\n", totalHeap);
+  Serial.printf("Heap Used: %u bytes\n", usedHeap);
+  Serial.printf("Heap Usage: %.2f%%\n", heapUsage);
+
+  if (totalPsram > 0) {
+    Serial.printf("PSRAM Max: %u bytes\n", totalPsram);
+    Serial.printf("PSRAM Used: %u bytes\n", usedPsram);
+    Serial.printf("PSRAM Usage: %.2f%%\n", psramUsage);
+  } else {
+    Serial.println("PSRAM not available");
+  }
+
+  // SPIFFS information
+  if (SPIFFS.begin()) {
+    uint32_t totalSpiffs = SPIFFS.totalBytes();
+    uint32_t usedSpiffs = SPIFFS.usedBytes();
+    float spiffsUsage = (float)usedSpiffs / totalSpiffs * 100;
+
+    Serial.printf("SPIFFS Max: %u bytes\n", totalSpiffs);
+    Serial.printf("SPIFFS Used: %u bytes\n", usedSpiffs);
+    Serial.printf("SPIFFS Usage: %.2f%%\n", spiffsUsage);
+
+    SPIFFS.end();
+  } else {
+    Serial.println("SPIFFS Mount Failed");
+  }
+}
+
+void deleteMotionData() {
+  String filesToDelete[] = {"/test1.txt", "/test2.txt", "/test3.txt", "/test4.txt", "/test5.txt"};
+  if (SPIFFS.begin()) {
+    for (int i = 0; i < 5; i++) {
+      if (SPIFFS.exists(filesToDelete[i])) {
+        SPIFFS.remove(filesToDelete[i]);
+        Serial.println("Deleted: " + filesToDelete[i]);
+      } else {
+        Serial.println("File not found: " + filesToDelete[i]);
+      }
+    }
+    SPIFFS.end();
+  } else {
+    Serial.println("SPIFFS Mount Failed");
+  }
+}
+
+void requestedMotion(int mode) {
+  requestedMode = mode;
+  motionRequested = true;
+}
+
+
+
+
+Action checkAction(String command) {
+  command.trim();
+  for (int i = 0; i < sizeof(ACTIONS); i += 1) {
+    if (command == ACTIONS[i].command) {
+    return ACTIONS[i];
+    }
+  }
+  return ACTIONS[0];
+}
+
+
+void handleSerial(){
   if (Serial.available()) {
     String command = Serial.readStringUntil('\n');
     Action action = checkAction(command);
     if (action.id == 0) return;
 
 
-    if (xSemaphoreTake(xSemaphore, (TickType_t)10) == pdTRUE) {
-      if (action.id == ArrowPressUp) {
-        if (verticalLevel < pressButtonCount) {
-          verticalLevel++;
-          dxl.goalPosition(TARGET_ID21, (((verticalHomePos - verticalMinPos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
-        }
-      } else if (action.id == ArrowPressDown) {
-        if (verticalLevel > -pressButtonCount) {
-          verticalLevel--;
-          dxl.goalPosition(TARGET_ID21, (((verticalMaxPos - verticalHomePos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
-        }
-      } else if (action.id == ArrowPressRight) {
-        if (horizontalLevel < pressButtonCount) {
-          horizontalLevel++;
-          dxl.goalPosition(TARGET_ID23, ((horizontalHomePos - horizontalMinPos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
-        }
-      } else if (action.id == ArrowPressLeft) {
-        if (horizontalLevel > -pressButtonCount) {
-          horizontalLevel--;
-          dxl.goalPosition(TARGET_ID23, ((horizontalMaxPos - horizontalHomePos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
-        }
-      } else if (action.id == ArrowPressCenter) {
-        dxl.goalPosition(TARGET_ID21, verticalHomePos);
-        dxl.goalPosition(TARGET_ID23, horizontalHomePos);
-        verticalLevel = 0;
-        horizontalLevel = 0;
-        dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
-        dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
-      } else if (action.id == ButtonPressA) {
-        requestedMode = 11;
-        motionRequested = true;
-      } else if (action.id == ButtonPressB) {
-        requestedMode = 12;
-        motionRequested = true;
-      } else if (action.id == ButtonPressC) {
-        requestedMode = 13;
-        motionRequested = true;
-      } else if (action.id == ButtonPressD) {
-        requestedMode = 14;
-        motionRequested = true;
-      } else if (action.id == ButtonPressE) {
-        requestedMode = 15;
-        motionRequested = true;
-      } else if (action.id == ButtonPressY) {
-        // // メモリ使用率を表示
-        uint32_t totalHeap = ESP.getHeapSize();
-        uint32_t freeHeap = ESP.getFreeHeap();
-        uint32_t usedHeap = totalHeap - freeHeap;
-        float heapUsage = (float)usedHeap / totalHeap * 100;
+    if (action.id == ArrowPressUp) {
+      Serial.println("ArrowPressUp");
+    } else if (action.id == ArrowPressDown) {
+      Serial.println("ArrowPressDown");
+    } else if (action.id == ArrowPressRight) {
+      Serial.println("ArrowPressRight");
+    } else if (action.id == ArrowPressLeft) {
+      Serial.println("ArrowPressLeft");
+    } else if (action.id == ArrowPressCenter) {
+      Serial.println("ArrowPressCenter");
+      // stopMotion();
+      stopPlaying = true;
+    } else if (action.id == ArrowOut) {
+      Serial.println("ArrowOut");
 
-        uint32_t totalPsram = ESP.getPsramSize();
-        uint32_t freePsram = ESP.getFreePsram();
-        uint32_t usedPsram = totalPsram - freePsram;
-        float psramUsage = (float)usedPsram / totalPsram * 100;
+    } else if (action.id == ButtonPressA) {
+      Serial.println("ButtonPressA");
+      requestedMotion(11);
+    } else if (action.id == ButtonPressB) {
+      Serial.println("ButtonPressB");
+      requestedMotion(12);
+    } else if (action.id == ButtonPressC) {
+      Serial.println("ButtonPressC");
+      requestedMotion(13);
+    } else if (action.id == ButtonPressD) {
+      Serial.println("ButtonPressD");
+      requestedMotion(14);
+    } else if (action.id == ButtonPressE) {
+      Serial.println("ButtonPressE");
+      requestedMotion(15);
+    } else if (action.id == ButtonPressX) {
+      Serial.println("ButtonPressX");
+      startMode();
+    } else if (action.id == ButtonPressY) {
+      Serial.println("ButtonPressY");
+      showMemoryData();
+    } else if (action.id == ButtonPressZ) {
+      Serial.println("ButtonPressZ");
+      deleteMotionData();
+    } else if (action.id == ButtonOut) {
+      Serial.println("ButtonOut");
 
-        Serial.printf("Heap Max: %u bytes\n", totalHeap);
-        Serial.printf("Heap Used: %u bytes\n", usedHeap);
-        Serial.printf("Heap Usage: %.2f%%\n", heapUsage);
-
-        if (totalPsram > 0) {
-          Serial.printf("PSRAM Max: %u bytes\n", totalPsram);
-          Serial.printf("PSRAM Used: %u bytes\n", usedPsram);
-          Serial.printf("PSRAM Usage: %.2f%%\n", psramUsage);
-        } else {
-          Serial.println("PSRAM not available");
-        }
-
-        // SPIFFS information
-        if (SPIFFS.begin()) {
-          uint32_t totalSpiffs = SPIFFS.totalBytes();
-          uint32_t usedSpiffs = SPIFFS.usedBytes();
-          float spiffsUsage = (float)usedSpiffs / totalSpiffs * 100;
-
-          Serial.printf("SPIFFS Max: %u bytes\n", totalSpiffs);
-          Serial.printf("SPIFFS Used: %u bytes\n", usedSpiffs);
-          Serial.printf("SPIFFS Usage: %.2f%%\n", spiffsUsage);
-
-          SPIFFS.end();
-        } else {
-          Serial.println("SPIFFS Mount Failed");
-        }
-
-      } else if (action.id == ButtonPressZ) {
-        // 登録されている1から5のモーションデータを完全に削除
-        String filesToDelete[] = {"/test1.txt", "/test2.txt", "/test3.txt", "/test4.txt", "/test5.txt"};
-        if (SPIFFS.begin()) {
-          for (int i = 0; i < 5; i++) {
-            if (SPIFFS.exists(filesToDelete[i])) {
-              SPIFFS.remove(filesToDelete[i]);
-              Serial.println("Deleted: " + filesToDelete[i]);
-            } else {
-              Serial.println("File not found: " + filesToDelete[i]);
-            }
-          }
-          SPIFFS.end();
-        } else {
-          Serial.println("SPIFFS Mount Failed");
-        }
-      } else if (action.id == ButtonOut) {
-      }
-
-      if (action.id == Start) {
-        verticalLevel = 0;
-        horizontalLevel = 0;
-        dxl.torqueEnable(TARGET_ID21, true);
-        dxl.torqueEnable(TARGET_ID23, true);
-        dxl.torqueEnable(TARGET_ID24, true);
-
-        headProfileVelocity = 3000;
-        dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
-        dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
-        headProfileVelocity = 1500;
-
-        dxl.goalPosition(TARGET_ID21, verticalHomePos);
-        dxl.goalPosition(TARGET_ID23, horizontalHomePos);
-      }
-
-      if (action.id == End) {
-        headProfileVelocity = 3000;
-        dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
-        dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
-        headProfileVelocity = 1500;
-
-        dxl.goalPosition(TARGET_ID21, verticalMaxPos);
-        dxl.goalPosition(TARGET_ID23, horizontalHomePos);
-        delay(3000);
-        dxl.torqueEnable(TARGET_ID21, false);
-        dxl.torqueEnable(TARGET_ID23, false);
-        dxl.torqueEnable(TARGET_ID24, false);
-      }
-
-      if (action.id == HeadArrowPressUp) {
-        Serial.println("頭部操作キー上を押下時に送信");
-        if (verticalLevel < pressButtonCount) {
-          verticalLevel++;
-          dxl.goalPosition(TARGET_ID21, (((verticalHomePos - verticalMinPos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
-        }
-      }
-      if (action.id == HeadArrowPressDown) {
-        Serial.println("頭部操作キー下を押下時に送信");
-        if (verticalLevel > -pressButtonCount) {
-          verticalLevel--;
-          dxl.goalPosition(TARGET_ID21, (((verticalMaxPos - verticalHomePos) / pressButtonCount) * (-verticalLevel)) + verticalHomePos);
-        }
-      }
-      if (action.id == HeadArrowPressRight) {
-        Serial.println("頭部操作キー右を押下時に送信");
-        if (horizontalLevel < pressButtonCount) {
-          horizontalLevel++;
-          dxl.goalPosition(TARGET_ID23, ((horizontalHomePos - horizontalMinPos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
-        }
-      }
-      if (action.id == HeadArrowPressLeft) {
-        Serial.println("頭部操作キー左を押下時に送信");
-        if (horizontalLevel > -pressButtonCount) {
-          horizontalLevel--;
-          dxl.goalPosition(TARGET_ID23, ((horizontalMaxPos - horizontalHomePos) / pressButtonCount) * (-horizontalLevel) + horizontalHomePos);
-        }
-      }
-      if (action.id == HeadArrowPressCenter) {
-        Serial.println("頭部操作キー中央を押下時に送信");
-        dxl.goalPosition(TARGET_ID21, verticalHomePos);
-        dxl.goalPosition(TARGET_ID23, horizontalHomePos);
-        verticalLevel = 0;
-        horizontalLevel = 0;
-        dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
-        dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
-      }
-      if (action.id == HeadArrowOut) {
-        Serial.println("頭部操作キーの押下が終了した時に送信");
-      }
-
-
-      if (action.id == MoveArrowPressUp) {
-        Serial.println("移動キー上を押下時に送信");
-      }
-      if (action.id == MoveArrowPressDown) {
-        Serial.println("移動キ下を押下時に送信");
-      }
-      if (action.id == MoveArrowPressRight) {
-        Serial.println("移動キー右を押下時に送信");
-      }
-      if (action.id == MoveArrowPressLeft) {
-        Serial.println("移動キー左を押下時に送信");
-      }
-      if (action.id == MoveArrowOut) {
-        Serial.println("移動キーの押下が終了した時に送信");
-      }
-
-
-
-      xSemaphoreGive(xSemaphore);
     }
+
+    if (action.id == Start) {
+      Serial.println("talkStart");
+      startMode();
+    }
+
+    if (action.id == End) {
+      Serial.println("endTalk");
+      endMode();
+    }
+
+    if (action.id == HeadArrowPressUp) {
+      Serial.println("HeadArrowPressUp");
+      moveVertical(1);
+    }
+    if (action.id == HeadArrowPressDown) {
+      Serial.println("HeadArrowPressDown");
+      moveVertical(-1);
+    }
+    if (action.id == HeadArrowPressRight) {
+      Serial.println("HeadArrowPressRight");
+      moveHorizontal(1);
+    }
+    if (action.id == HeadArrowPressLeft) {
+      Serial.println("HeadArrowPressLeft");
+      moveHorizontal(-1);
+    }
+    if (action.id == HeadArrowPressCenter) {
+      Serial.println("HeadArrowPressCenter");
+      centerPosition();
+    }
+    if (action.id == HeadArrowOut) {
+      Serial.println("HeadArrowOut");
+    }
+
+
+    if (action.id == MoveArrowPressUp) {
+      Serial.println("移動キー上を押下時に送信");
+      Serial.println("MoveArrowPressUp");
+    }
+    if (action.id == MoveArrowPressDown) {
+      Serial.println("移動キ下を押下時に送信");
+      Serial.println("MoveArrowPressDown");
+    }
+    if (action.id == MoveArrowPressRight) {
+      Serial.println("移動キー右を押下時に送信");
+      Serial.println("MoveArrowPressRight");
+    }
+    if (action.id == MoveArrowPressLeft) {
+      Serial.println("移動キー左を押下時に送信");
+      Serial.println("MoveArrowPressLeft");
+    }
+    if (action.id == MoveArrowOut) {
+      Serial.println("移動キーの押下が終了した時に送信");
+      Serial.println("MoveArrowOut");
+    }
+
   }
-  vTaskDelay(10 / portTICK_PERIOD_MS);
+  vTaskDelay(100 / portTICK_PERIOD_MS);
 }
 
 
@@ -1197,7 +1308,7 @@ void recordMotion() {
       DISPwrite("STOPPED");
       stopRecording = false;
     }
-    
+      
     file.close();
   }
 }
@@ -1247,15 +1358,15 @@ void playMotion() {
       if (c == ',' || c == '\n' || c == -1) {
         buffer[pos] = '\0';
         if (index < defaultRecordNumber * 36) { // 範囲チェック
-            values[index++] = atoi(buffer);
+          values[index++] = atoi(buffer);
         }
         pos = 0;
         if (c == '\n' || c == -1) {
-            break;
+          break;
         }
       } else {
         if (pos < sizeof(buffer) - 1) { // バッファオーバーフロー防止
-            buffer[pos++] = c;
+          buffer[pos++] = c;
         }
       }
     }
@@ -1263,7 +1374,6 @@ void playMotion() {
   }
   file.close();
   SPIFFS.end();  // SPIFFSの使用終了
-
 
   totalRecordTime = values[index - 2];
 
@@ -1296,6 +1406,8 @@ void playMotion() {
     dxl.torqueEnable(TARGET_ID17, true);
     dxl.torqueEnable(TARGET_ID18, true);
 
+    settingProfileVelocity(150);
+
     for (int i = 0; i < playMotionTime && i * number + 15 < defaultRecordNumber * 36; i++) {
 
       // STOPボタンが押されたかどうかをチェック
@@ -1309,36 +1421,9 @@ void playMotion() {
           keyColor[j] = TFT_DARKGREEN;
         }
 
-        profileVelocity = 5000;
-        dxl.profileVelocity(TARGET_ID1, profileVelocity);
-        dxl.profileVelocity(TARGET_ID2, profileVelocity);
-        dxl.profileVelocity(TARGET_ID3, profileVelocity);
-        dxl.profileVelocity(TARGET_ID4, profileVelocity);
-        dxl.profileVelocity(TARGET_ID11, profileVelocity);
-        dxl.profileVelocity(TARGET_ID12, profileVelocity);
-        dxl.profileVelocity(TARGET_ID13, profileVelocity);
-        dxl.profileVelocity(TARGET_ID14, profileVelocity);
+        DISPwrite("STOPPED");
 
-        dxl.goalPosition(TARGET_ID1, ran1);
-        dxl.goalPosition(TARGET_ID2, ran2);
-        dxl.goalPosition(TARGET_ID3, ran3);
-        dxl.goalPosition(TARGET_ID4, ran4);
-        dxl.goalPosition(TARGET_ID11, ran11);
-        dxl.goalPosition(TARGET_ID12, ran12);
-        dxl.goalPosition(TARGET_ID13, ran13);
-        dxl.goalPosition(TARGET_ID13, ran14);
-
-        delay(6000);
-
-        profileVelocity = 1500;
-        dxl.profileVelocity(TARGET_ID1, profileVelocity);
-        dxl.profileVelocity(TARGET_ID2, profileVelocity);
-        dxl.profileVelocity(TARGET_ID3, profileVelocity);
-        dxl.profileVelocity(TARGET_ID4, profileVelocity);
-        dxl.profileVelocity(TARGET_ID11, profileVelocity);
-        dxl.profileVelocity(TARGET_ID12, profileVelocity);
-        dxl.profileVelocity(TARGET_ID13, profileVelocity);
-        dxl.profileVelocity(TARGET_ID14, profileVelocity);
+        stopMotion();
 
         ///////////////////////////////////////////////////////////////
         dxl.torqueEnable(TARGET_ID3, false);
@@ -1359,8 +1444,6 @@ void playMotion() {
 
         break;
       }
-
-      checkSerial();
 
       if (i * number + 15 >= defaultRecordNumber * 36) {
         Serial.println("インデックス範囲を超えました");
@@ -1444,31 +1527,27 @@ void playMotion() {
       leftArmRange(s12, ran12);
       leftArmRange(s14, ran14);
 
+      digitalWrite(pin1, HIGH);
 
-      if (xSemaphoreTake(xSemaphore, (TickType_t)10) == pdTRUE) {
-        digitalWrite(pin1, HIGH);
+      dxl.goalPosition(TARGET_ID1, ss1);
+      dxl.goalPosition(TARGET_ID2, ss2);
+      dxl.goalPosition(TARGET_ID3, ss3);
+      dxl.goalPosition(TARGET_ID4, ss4);
+      dxl.goalPosition(TARGET_ID5, ss5);
+      dxl.goalPosition(TARGET_ID6, ss6);
+      dxl.goalPosition(TARGET_ID7, ss7);
+      dxl.goalPosition(TARGET_ID8, ss8 + 15);
 
-        dxl.goalPosition(TARGET_ID1, ss1);
-        dxl.goalPosition(TARGET_ID2, ss2);
-        dxl.goalPosition(TARGET_ID3, ss3);
-        dxl.goalPosition(TARGET_ID4, ss4);
-        dxl.goalPosition(TARGET_ID5, ss5);
-        dxl.goalPosition(TARGET_ID6, ss6);
-        dxl.goalPosition(TARGET_ID7, ss7);
-        dxl.goalPosition(TARGET_ID8, ss8 + 15);
+      dxl.goalPosition(TARGET_ID11, ss11);
+      dxl.goalPosition(TARGET_ID12, ss12);
+      dxl.goalPosition(TARGET_ID13, ss13);
+      dxl.goalPosition(TARGET_ID14, ss14);
+      dxl.goalPosition(TARGET_ID15, ss15);
+      dxl.goalPosition(TARGET_ID16, ss16);
+      dxl.goalPosition(TARGET_ID17, ss17);
+      dxl.goalPosition(TARGET_ID18, ss18 + 15);
 
-        dxl.goalPosition(TARGET_ID11, ss11);
-        dxl.goalPosition(TARGET_ID12, ss12);
-        dxl.goalPosition(TARGET_ID13, ss13);
-        dxl.goalPosition(TARGET_ID14, ss14);
-        dxl.goalPosition(TARGET_ID15, ss15);
-        dxl.goalPosition(TARGET_ID16, ss16);
-        dxl.goalPosition(TARGET_ID17, ss17);
-        dxl.goalPosition(TARGET_ID18, ss18 + 15);
-
-        digitalWrite(pin1, LOW);
-        xSemaphoreGive(xSemaphore);
-      }
+      digitalWrite(pin1, LOW);
 
       vTaskDelay(1 / portTICK_PERIOD_MS);
     }
@@ -1476,7 +1555,7 @@ void playMotion() {
     if (!stopPlaying) {
       DISPwrite("COMPLETE");
     } else {
-      DISPwrite("STOPPED");
+      // DISPwrite("STOPPED");
       stopPlaying = false;
     }
 
@@ -1615,22 +1694,8 @@ void armloop() {
     dxl.driveMode(TARGET_ID23, 0x04);
     dxl.driveMode(TARGET_ID24, 0x04);
 
-    dxl.profileVelocity(TARGET_ID1, profileVelocity);
-    dxl.profileVelocity(TARGET_ID2, profileVelocity);
-    dxl.profileVelocity(TARGET_ID3, profileVelocity);
-    dxl.profileVelocity(TARGET_ID4, profileVelocity);
-    dxl.profileVelocity(TARGET_ID5, profileVelocity);
-    dxl.profileVelocity(TARGET_ID6, profileVelocity);
-    dxl.profileVelocity(TARGET_ID7, profileVelocity);
-    dxl.profileVelocity(TARGET_ID8, profileVelocity);
-    dxl.profileVelocity(TARGET_ID11, profileVelocity);
-    dxl.profileVelocity(TARGET_ID12, profileVelocity);
-    dxl.profileVelocity(TARGET_ID13, profileVelocity);
-    dxl.profileVelocity(TARGET_ID14, profileVelocity);
-    dxl.profileVelocity(TARGET_ID15, profileVelocity);
-    dxl.profileVelocity(TARGET_ID16, profileVelocity);
-    dxl.profileVelocity(TARGET_ID17, profileVelocity);
-    dxl.profileVelocity(TARGET_ID18, profileVelocity);
+    settingProfileVelocity(150);
+
     dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
     dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
     dxl.profileVelocity(TARGET_ID24, profileVelocity);
@@ -1722,6 +1787,109 @@ void armloop() {
   }
 }
 
+void toggleMainLoop() {
+  if (mainloop == false) {
+    digitalWrite(pin2, LOW);
+    mainloop = true;
+  } else {
+    digitalWrite(pin2, HIGH);
+    mainloop = false;
+  }
+}
+
+void handleKeyPress(uint8_t b) {
+
+  if (b == 0) {
+    DISPwrite("RUN b=0");
+    mode = 10;
+  }
+
+  if (b == 1) {
+    if (mode >= 1 && mode <= 9) {
+      stopRecording = true;
+    } else {
+      DISPwrite("MODE b=1");
+    }
+  }
+
+  if (b == 2) {
+    DISPwrite("REC b=2");
+    mode = 0;
+  }
+
+  if (b == 3 ) {
+    DISPwrite("b=3");
+    sw01State = 0;
+  }
+
+  if (b == 4 ) {
+    DISPwrite("b=4");
+    sw02State = 0;
+  }
+
+  if (b == 5 ) {
+    DISPwrite("b=5");
+    sw03State = 0;
+  }
+
+  if (b == 6 ) {
+    DISPwrite("b=6");
+    sw04State = 0;
+  }
+
+  if (b == 7 ) {
+    DISPwrite("b=7");
+    sw05State = 0;
+  }
+}
+
+void handleKeypad() {
+  uint16_t t_x = 0, t_y = 0;
+  bool pressed = tft.getTouch(&t_x, &t_y);
+  for (uint8_t b = 0; b < 12; b++) {
+    if (pressed && key[b].contains(t_x, t_y)) {
+      key[b].press(true);
+      drawKeypad();
+    } else {
+      key[b].press(false);
+    }
+  }
+  for (uint8_t b = 0; b < 12; b++) {
+    if (b < 3) tft.setFreeFont(LABEL1_FONT);
+    else tft.setFreeFont(LABEL2_FONT);
+    if (key[b].justReleased()) key[b].drawButton();
+    if (key[b].justPressed()) {
+      key[b].drawButton(true);
+      handleKeyPress(b);
+      drawKeypad();
+    }
+  }
+}
+
+void checkAudioMode() {
+  int swAudioState = digitalRead(swAudio);
+  if (swAudioState == 0) {
+    audioMode = 1;
+  }
+}
+
+void handleMotionRequest() {
+  if (motionRequested) {
+    mode = requestedMode;
+    playMotion();
+    motionRequested = false;
+    mode = 10;
+  }
+}
+
+
+void Core0a(void *args) {
+  Serial.println("Core0a Start");
+  while (true) { // 永久ループに変更
+    handleSerial();
+  }
+}
+
 
 void setup() {
   // Serial.begin(115200);
@@ -1789,23 +1957,53 @@ void setup() {
   ran2 = dxl.presentPosition(TARGET_ID2); delay(5);
   ran3 - dxl.presentPosition(TARGET_ID3); delay(5);
   ran4 = dxl.presentPosition(TARGET_ID4); delay(5);
+  ran5 = dxl.presentPosition(TARGET_ID5); delay(5);
+  ran6 = dxl.presentPosition(TARGET_ID6); delay(5);
+  ran7 = dxl.presentPosition(TARGET_ID7); delay(5);
+  ran8 = dxl.presentPosition(TARGET_ID8); delay(5);
 
   ran11 = dxl.presentPosition(TARGET_ID11); delay(5);
   ran12 = dxl.presentPosition(TARGET_ID12); delay(5);
   ran13 - dxl.presentPosition(TARGET_ID13); delay(5);
   ran14 = dxl.presentPosition(TARGET_ID14); delay(5);
+  ran15 = dxl.presentPosition(TARGET_ID15); delay(5);
+  ran16 = dxl.presentPosition(TARGET_ID16); delay(5);
+  ran17 = dxl.presentPosition(TARGET_ID17); delay(5);
+  ran18 = dxl.presentPosition(TARGET_ID18); delay(5);
 
   Serial.print(ran1);
-  Serial.print(",");
+  Serial.print(", ");
   Serial.print(ran2);
-  Serial.print(",");
+  Serial.print(", ran3 = ");
+  Serial.print(ran3);
+  Serial.print(", ");
   Serial.print(ran4);
-  Serial.print(",");
+  Serial.print(", ");
+  Serial.print(ran5);
+  Serial.print(", ");
+  Serial.print(ran6);
+  Serial.print(", ");
+  Serial.print(ran7);
+  Serial.print(", ");
+  Serial.print(ran8);
+  Serial.print(", ");
   Serial.print(ran11);
-  Serial.print(",");
+  Serial.print(", ");
   Serial.print(ran12);
-  Serial.print(",");
-  Serial.println(ran14);
+  Serial.print(", ran13 = ");
+  Serial.print(ran13);
+  Serial.print(", ");
+  Serial.print(ran14);
+  Serial.print(", ");
+  Serial.print(ran15);
+  Serial.print(", ");
+  Serial.print(ran16);
+  Serial.print(", ");
+  Serial.print(ran17);
+  Serial.print(", ");
+  Serial.println(ran18);
+
+
 
   pinMode(pin1, OUTPUT);
   pinMode(pin2, OUTPUT);
@@ -1841,21 +2039,10 @@ void setup() {
   disableCore0WDT();
   disableCore1WDT();
 
-  // xTaskCreatePinnedToCore(onlySerialCore, "onlySerialCore", 20480, NULL, 1, &thp[0], 0);
+  // スタックサイズを増やし、優先順位を1に設定
+  xTaskCreatePinnedToCore(Core0a, "Core0a", 8192, NULL, 1, &thp[0], 0);
+  // xTaskCreatePinnedToCore(Core0a, "Core0a", 16384, NULL, 1, &thp[0], 0);
   
-  // // Core 0でシリアルコマンド監視タスクを実行
-  // xTaskCreatePinnedToCore(
-  //   checkSerial,   // 関数
-  //   "checkSerial", // タスク名
-  //   8192,        // スタックサイズ
-  //   NULL,         // パラメータ
-  //   1,            // 優先度
-  //   &thp[0],         // タスクハンドル
-  //   1);           // Core
-
-  // セマフォの作成
-  xSemaphore = xSemaphoreCreateMutex();
-
   // SPIFFSの初期化とマウント
   if (!SPIFFS.begin(true)) {
     Serial.println("An error has occurred while mounting SPIFFS");
@@ -1867,101 +2054,13 @@ void setup() {
   Serial.println("setup done");
 }
 
-
-
-
-
-void loop(void) {
-  if (mainloop == false){
-    digitalWrite(pin2, LOW);
-    mainloop = true;
-  } else {
-    digitalWrite(pin2, HIGH);
-    mainloop = false;
-  }
-
-  checkSerial();
-
-  uint16_t t_x = 0, t_y = 0;
-  bool pressed = tft.getTouch(&t_x, &t_y);
-  for (uint8_t b = 0; b < 12; b++) {
-    if (pressed && key[b].contains(t_x, t_y)) {
-      key[b].press(true);
-      drawKeypad();
-    } else {
-      key[b].press(false);
-    }
-  }
-
-  for (uint8_t b = 0; b < 12; b++) {
-  // for (uint8_t b = 0; b < 9; b++) {
-
-    if (b < 3) tft.setFreeFont(LABEL1_FONT);
-    else tft.setFreeFont(LABEL2_FONT);
-    if (key[b].justReleased()) key[b].drawButton();
-    if (key[b].justPressed()) {
-      key[b].drawButton(true);
-
-      if (b == 0) {
-        DISPwrite("RUN b=0");
-        mode = 10;
-      }
-
-      if (b == 1) {
-        if (mode >= 1 && mode <= 9) {
-          stopRecording = true;
-        } else {
-          DISPwrite("MODE b=1");
-        }
-      }
-
-      if (b == 2) {
-        DISPwrite("REC b=2");
-        mode = 0;
-      }
-
-      if (b == 3 ) {
-        DISPwrite("b=3");
-        sw01State = 0;
-      }
-
-      if (b == 4 ) {
-        DISPwrite("b=4");
-        sw02State = 0;
-      }
-
-      if (b == 5 ) {
-        DISPwrite("b=5");
-        sw03State = 0;
-      }
-
-      if (b == 6 ) {
-        DISPwrite("b=6");
-        sw04State = 0;
-      }
-
-      if (b == 7 ) {
-        DISPwrite("b=7");
-        sw05State = 0;
-      }
-      drawKeypad();
-
-    }
-  }
+void loop() {
+  toggleMainLoop();
+  handleSerial();
+  handleKeypad();
   armloop();
   zero();
   slow();
-
-  int swAudioState = digitalRead(swAudio);
-  if (swAudioState == 0) {
-    audioMode = 1;
-  }
-
-  if (motionRequested) {
-    mode = requestedMode;
-    playMotion();
-    motionRequested = false;
-    mode = 10;
-  }
-
+  checkAudioMode();
+  handleMotionRequest();
 }
