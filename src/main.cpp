@@ -12,7 +12,7 @@
 String numberBuffer1 = "test";
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.14.15"
+#define VERSION_NUMBER  "ver. 0.14.16"
 // -----------------------------------
 
 
@@ -786,12 +786,22 @@ void startMode() {
   dxl.torqueEnable(TARGET_ID21, true);
   dxl.torqueEnable(TARGET_ID23, true);
   dxl.torqueEnable(TARGET_ID24, true);
+  
   headProfileVelocity = 3000;
   dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
   dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
   headProfileVelocity = 1500;
+  dxl.profileVelocity(TARGET_ID21, headProfileVelocity);
+  dxl.profileVelocity(TARGET_ID23, headProfileVelocity);
+
   dxl.goalPosition(TARGET_ID21, verticalHomePos);
   dxl.goalPosition(TARGET_ID23, horizontalHomePos);
+  delay(1500);
+  dxl.goalPosition(TARGET_ID21, verticalMaxPos);
+  delay(1500);
+  dxl.goalPosition(TARGET_ID21, verticalHomePos);
+  delay(1500);
+
 }
 
 void endMode() {
