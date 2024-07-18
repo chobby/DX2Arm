@@ -12,7 +12,7 @@
 String numberBuffer1 = "test";
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.14.18"
+#define VERSION_NUMBER  "ver. 0.14.20"
 // -----------------------------------
 
 TaskHandle_t thp[1]; // マルチスレッドのタスクハンドル格納用
@@ -886,10 +886,12 @@ void stopMotion() {
   dxl.goalPosition(TARGET_ID16, ran16);
   dxl.goalPosition(TARGET_ID17, ran17);
   dxl.goalPosition(TARGET_ID18, ran18);
+  
+  Serial.println("stopMotion");
+  Serial.print("ran13 : ");
+  Serial.println(ran13);
 
   delay(11000);
-  Serial.println("stopMotion");
-  Serial.println(ran13);
 
   settingProfileVelocity(150);
 }
@@ -1424,6 +1426,8 @@ void playMotion() {
         DISPwrite("STOPPED");
 
         stopMotion();
+
+        DISPwrite("Ready");
 
         ///////////////////////////////////////////////////////////////
         dxl.torqueEnable(TARGET_ID3, false);
@@ -2029,6 +2033,7 @@ void setup() {
   tft.setTextFont(1);
   DISPwrite(VERSION_NUMBER);
   delay(2000);
+  DISPwrite("Ready");
   // DISPwrite(bluetoothDeviceName);
 
   Serial.println("mode= " + mode);
@@ -2039,9 +2044,7 @@ void setup() {
   disableCore0WDT();
   disableCore1WDT();
 
-  // スタックサイズを増やし、優先順位を1に設定
-  xTaskCreatePinnedToCore(Core0a, "Core0a", 8192, NULL, 1, &thp[0], 0);
-  // xTaskCreatePinnedToCore(Core0a, "Core0a", 16384, NULL, 1, &thp[0], 0);
+  xTaskCreatePinnedToCore(Core0a, "Core0a", 65536, NULL, 1, &thp[0], 0);
   
   // SPIFFSの初期化とマウント
   if (!SPIFFS.begin(true)) {
