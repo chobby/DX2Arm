@@ -12,7 +12,7 @@
 String numberBuffer1 = "test";
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "ver. 0.14.20"
+#define VERSION_NUMBER  "ver. 0.14.21"
 // -----------------------------------
 
 TaskHandle_t thp[1]; // マルチスレッドのタスクハンドル格納用
@@ -330,7 +330,7 @@ void DISPprint() {
   int xwidth = tft.drawString(numberBuffer1, DISP_X + 4, DISP_Y + 12);
 
   tft.fillRect(DISP_X + 4 + xwidth, DISP_Y + 1, DISP_W - xwidth - 5, DISP_H - 2, TFT_BLACK);
-  delay(10);
+  delay(50);
 }
 
 void DISPreset() {
@@ -340,7 +340,7 @@ void DISPreset() {
   numberBuffer1 = "";
   int xwidth = tft.drawString(numberBuffer1, DISP_X + 4, DISP_Y + 12);
   tft.fillRect(DISP_X + 4 + xwidth, DISP_Y + 1, DISP_W - xwidth - 5, DISP_H - 2, TFT_BLACK);
-  delay(10);
+  delay(50);
 }
 
 void DISPwrite(String A) {
@@ -352,10 +352,10 @@ void DISPwrite(String A) {
   numberBuffer1 = "";
   int xwidth = tft.drawString(numberBuffer1, DISP_X + 4, DISP_Y + 12);
   tft.fillRect(DISP_X + 4 + xwidth, DISP_Y + 1, DISP_W - xwidth - 5, DISP_H - 2, TFT_BLACK);
-  delay(10);
+  delay(50);
   xwidth = tft.drawString(A, DISP_X + 4, DISP_Y + 12);
   tft.fillRect(DISP_X + 4 + xwidth, DISP_Y + 1, DISP_W - xwidth - 5, DISP_H - 2, TFT_BLACK);
-  delay(10);
+  delay(50);
 }
 
 void UNDERDISPprint() {
@@ -365,7 +365,7 @@ void UNDERDISPprint() {
   int xwidth = tft.drawString(numberBuffer1, UNDERDISP_X + 4, UNDERDISP_Y + 12);
 
   tft.fillRect(UNDERDISP_X + 4 + xwidth, UNDERDISP_Y + 1, UNDERDISP_W - xwidth - 5, UNDERDISP_H - 2, TFT_BLACK);
-  delay(10);
+  delay(50);
 }
 
 void UNDERDISPreset() {
@@ -375,7 +375,7 @@ void UNDERDISPreset() {
   numberBuffer1 = "";
   int xwidth = tft.drawString(numberBuffer1, UNDERDISP_X + 4, UNDERDISP_Y + 12);
   tft.fillRect(UNDERDISP_X + 4 + xwidth, UNDERDISP_Y + 1, UNDERDISP_W - xwidth - 5, UNDERDISP_H - 2, TFT_BLACK);
-  delay(10);
+  delay(50);
 }
 
 void UNDERDISPwrite(String A) {
@@ -385,10 +385,10 @@ void UNDERDISPwrite(String A) {
   numberBuffer1 = "";
   int xwidth = tft.drawString(numberBuffer1, UNDERDISP_X + 4, UNDERDISP_Y + 12);
   tft.fillRect(UNDERDISP_X + 4 + xwidth, UNDERDISP_Y + 1, UNDERDISP_W - xwidth - 5, UNDERDISP_H - 2, TFT_BLACK);
-  delay(10);
+  delay(50);
   xwidth = tft.drawString(A, UNDERDISP_X + 4, UNDERDISP_Y + 12);
   tft.fillRect(UNDERDISP_X + 4 + xwidth, UNDERDISP_Y + 1, UNDERDISP_W - xwidth - 5, UNDERDISP_H - 2, TFT_BLACK);
-  delay(10);
+  delay(50);
 }
 
 void TIMERDISPprint() {
@@ -398,7 +398,7 @@ void TIMERDISPprint() {
   int xwidth = tft.drawString(numberBuffer1, UNDERDISP_X + 4, UNDERDISP_Y + 12);
 
   tft.fillRect(UNDERDISP_X + 4 + xwidth, UNDERDISP_Y + 1, UNDERDISP_W - xwidth - 5, UNDERDISP_H - 2, TFT_BLACK);
-  delay(10);
+  delay(50);
 }
 
 void TIMERDISPreset() {
@@ -911,6 +911,7 @@ void showMemoryData() {
   Serial.printf("Heap Max: %u bytes\n", totalHeap);
   Serial.printf("Heap Used: %u bytes\n", usedHeap);
   Serial.printf("Heap Usage: %.2f%%\n", heapUsage);
+  DISPwrite("Usage:" + String(heapUsage) + "%");
 
   if (totalPsram > 0) {
     Serial.printf("PSRAM Max: %u bytes\n", totalPsram);
@@ -934,6 +935,8 @@ void showMemoryData() {
   } else {
     Serial.println("SPIFFS Mount Failed");
   }
+  delay(2000);
+  DISPwrite("Ready");
 }
 
 void deleteMotionData() {
@@ -948,6 +951,9 @@ void deleteMotionData() {
       }
     }
     SPIFFS.end();
+    DISPwrite("Deleted");
+    delay(2000);
+    DISPwrite("Ready");
   } else {
     Serial.println("SPIFFS Mount Failed");
   }
@@ -1558,8 +1564,13 @@ void playMotion() {
 
     if (!stopPlaying) {
       DISPwrite("COMPLETE");
+
+      mode = 10;
+      drawKeypad();
+      delay(1000);
+      DISPwrite("Ready");
+
     } else {
-      // DISPwrite("STOPPED");
       stopPlaying = false;
     }
 
@@ -2059,11 +2070,12 @@ void setup() {
 
 void loop() {
   toggleMainLoop();
-  handleSerial();
+  // handleSerial();
   handleKeypad();
   armloop();
   zero();
   slow();
   checkAudioMode();
   handleMotionRequest();
+  vTaskDelay(1 / portTICK_PERIOD_MS);
 }
